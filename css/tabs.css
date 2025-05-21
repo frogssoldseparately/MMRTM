@@ -1,0 +1,6 @@
+.tab-content {
+    display: none;
+}
+.tab.active {
+    background: #aaa;
+}

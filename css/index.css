@@ -1,0 +1,145 @@
+body {
+    display: none;
+}
+#info {
+    padding: 2px 5px;
+    * {
+        margin: 10px 0;
+    }
+}
+* {
+    box-sizing: border-box;
+}
+@media (prefers-color-scheme: light) {
+    body {
+        background: #eee;
+        color: #111;
+        > div {
+            border: 2px solid black;
+        }
+    }
+    .highlight {
+        color: magenta;
+    }
+    #page-cover {
+        background: #eee;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #111;
+        color: #eee;
+        > div {
+            border: 2px solid white;
+        }
+    }
+    .highlight {
+        color: yellow;
+    }
+    #page-cover {
+        background: #111;
+    }
+}
+.warning {
+    color: red;
+}
+.hazard {
+    color: orange;
+}
+.success {
+    color: green;
+}
+.parse-error {
+    border: 2px solid red;
+}
+.dragover {
+    color: blue;
+}
+
+#modifier-container {
+    border: none;
+    height: 30vh;
+    > div {
+        float: left;
+        height: 100%;
+        border: 1px solid white;
+        > h2 {
+            height: 15%;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        > div {
+            height: 85%;
+        }
+    }
+    #picker-container {
+        width: 40%;
+        #add-ons-container {
+            display: flex;
+            div {
+                width: 50%;
+                p {
+                    height: 10%;
+                    margin: 0;
+                    padding: 0;
+                }
+                select {
+                    height: 90%;
+                }
+                * {
+                    width: 100%;
+                    text-align: center;
+                }
+            }
+        }
+    }
+    #settings-container {
+        width: 60%;
+        #addon-settings-editor {
+            #addon-settings-navigator {
+                height: 10%;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-width: thin;
+                white-space: nowrap;
+            }
+            #addon-settings-pages {
+                height: 90%;
+                margin: 0;
+                padding: 0;
+                .tab-content {
+                    height: 100%;
+                    width: 100%;
+                    * {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    textarea {
+                        width: 90%;
+                        height: 100%;
+                        resize: none;
+                    }
+                    button {
+                        width: 10%;
+                    }
+                }
+            }
+        }
+    }
+}
+#page-cover {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    width: 100%;
+    height: 100%;
+    * {
+        width: 100%;
+        text-align: center;
+    }
+    h1 {
+        padding: 50px;
+    }
+    display: none;
+}

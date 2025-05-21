@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="icon" type="image/x-icon" href="img/favicon.ico">
+    <link rel="stylesheet" type="text/css" href="css/index.css">
+    <link rel="stylesheet" type="text/css" href="css/tabs.css">
+    <title>MMRTM</title>
+</head>
+
+<body>
+    <h1>MMR Tracker Modifier</h1>
+    <div id="info">
+        <h3>Instructions</h3>
+        <ol>
+            <li>Browse for the tracker.html file you want to modify.</li>
+            <li>Apply the snippets you want. Change their settings to your liking.</li>
+            <li>Click <span class="highlight">[Build]</span> and enjoy.</li>
+        </ol>
+        <p class="warning">This tool does <b>not</b> make changes to the original html file. It does all modifications
+            in browser.</p>
+        <h3>Local Storage</h3>
+        <p>Using this tool saves the most recently selected tracker and settings to local storage so you don't have to
+            navigate
+            back through your files each time you open this page. If you do not have local storage enabled (via a
+            browser add-on that
+            would block it, for example), you do not need to enable it for this tool to work. You just won't get the
+            convenience and saved setings.</p>
+        <p>Local Storage Status: <span id="local-storage-status" class="hazard">Unknown</span></p>
+        <h3>Bookmarking</h3>
+        <p>Bookmarking this page in your browser makes opening the MMR tracker easier. As long as the modifier html
+            folder isn't moved, it
+            will point to here in perpetuity. If you would like the build process to happen immediately upon opening the
+            page, add "<span class="highlight">?autobuild</span>" to the end of the URL and bookmark it. This will only
+            work if you have local storage enabled.
+        </p>
+        <p>Don't like the alerts reminding you of what the active shortcuts are? Add "<span
+                class="highlight">?silent</span>" to the end of the URL.</p>
+        <p>Using both would look like: "<span class="highlight">?autobuild&silent</span>"</p>
+        </p>
+        <h3>Want to Make Your Own?</h3>
+        <p>Information, tutorials, and examples of making add-on's for this tool are located in the doc folder. You can
+            read more about how to make your own add-on's there.
+        </p>
+        <p class="warning">I don't have any informative materials written at this time.</p>
+    </div>
+    <button id="toggle-info" onclick="toggleInfoPanelVisibility()">Hide Info</button>
+    <div>
+        <label for="file-picker">Source tracker</label>
+        <input id="file-picker" type="file" onchange="filePicked(event)" />
+        <button onclick="replaceHTML()">Build</button>
+    </div>
+    <div id="modifier-container">
+        <div id="picker-container">
+            <h2>Add-on's</h2>
+            <div id="add-ons-container">
+                <div>
+                    <p>Available Add-On's <a href="javascript:void(0);"
+                            onclick="alertContext('available-addons')">(?)</a>
+                    </p>
+                    <select id="addon-select" multiple></select>
+                </div>
+                <div>
+                    <p>Selected Add-On's <a href="javascript:void(0);" onclick="alertContext('selected-addons')">(?)</a>
+                    </p>
+                    <select id="active-addons" multiple></select>
+                </div>
+            </div>
+        </div>
+        <div id="settings-container">
+            <h2>Settings</h2>
+            <div id="addon-settings-editor" class="tab-container">
+                <div id="addon-settings-navigator" class="container-head">
+                    <button id="addon-settings-save" onclick="saveSettingsChanges()">Save</button>
+                </div>
+                <div id="addon-settings-pages" class="container-body">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="page-cover">
+        <h1>Building Tracker</h1>
+        <h3>Tracker Modifier by jkl</h3>
+    </div>
+    <script id="autoDarkHighlight-script" type="text/plain" stage="trackerStart"
+        replaces="HIGHLIGHT_CHECKS=highlightChecks; DEFAULT_THEME=defaultTheme">
+const highlightChecksControl = document.getElementById("highlight-checks");
+const bodyClassList = Array.from(document.body.classList);
+if ("${HIGHLIGHT_CHECKS}".toLowerCase() !== highlightChecksControl.checked.toString().toLowerCase())
+    highlightChecksControl.click();
+if (bodyClassList.find((className) => className.includes("${DEFAULT_THEME}".toLowerCase())) == null)
+    toggleDarkLight();
+    </script>
+    <script id="stateSaver-style" type="text/plain" content="css">
+.alert-text {
+    color: red;
+    visibility: hidden;
+}
+#conditional-copy-state-button {
+    background-color: red;
+    color: black;
+    border: 2px solid black;
+}
+    </script>
+    <script id="stateSaver-globals" type="text/plain">
+var copyButton;
+var killButton;
+var spoilerStateForm;
+var saveChangesToLocalStorage;
+
+function resetToStart() {
+    for (var id of startingLocations) {
+        logic[id].Checked = true;
+        var row = document.querySelector("tr[data-newlocationid='" + id + "']");
+        var itemId = id;
+        if (row) {
+            itemId = row.dataset.id;
+            document.querySelector("tr[data-newlocationid='" + id + "'] input").checked = true;
+        }
+        logic[itemId].Acquired = true;
+    }
+
+    var allLocationIds = [];
+    for (var i = 0; i < logic.length; i++) {
+        allLocationIds.push(i);
+    }
+    checkLocations(allLocationIds);
+}
+
+function clearTrackerSave(copyCurrentState) {
+    if (copyCurrentState != null && copyCurrentState) {
+        copyToClipboard(spoilerStateForm.value);
+    }
+    localStorage.removeItem("trackerState");
+    saveChangesToLocalStorage = false;
+    rows.forEach(row => {
+        var checkbox = row.querySelector("input");
+        if (checkbox && checkbox.checked) {
+            checkbox.click();
+        }
+    });
+    saveChangesToLocalStorage = true;
+    resetToStart();
+    localStorage.setItem("trackerState", spoilerStateForm.value);
+    
+    try {
+        checkClearAllButtons();
+    } catch {
+        console.log('Skipped some functionality. Map Navigator add-on unreachable.');
+    }
+    
+    document.body.scrollIntoView();
+}
+
+async function copyToClipboard(copyT) {
+    try {
+        await navigator.clipboard.writeText(copyT);
+        console.log('Tracker state copied to clipboard.');
+        var alertTexts = document.querySelectorAll('.alert-text');
+        alertTexts.forEach(at => {
+            at.style.visibility = 'visible';
+            setTimeout(() => at.style.visibility = 'hidden', 3000);
+        });
+        killConditionalButton();
+    } catch (err) {
+        if (!e.stack.includes('killConditionalButton')) console.log('Failed to copy: ', err);
+    }
+}
+
+function killConditionalButton() {
+    try {
+        document.body.removeChild(copyButton);
+        document.body.removeChild(killButton);
+    } catch (e) {
+        if (!(e instanceof TypeError)) throw e;
+    }
+}
+    </script>
+    <script id="stateSaver-script" type="text/plain" stage="trackerStart">
+spoilerStateForm = document.querySelector('#spoilerLogState');
+const romSeedSpan = document.querySelector('#seed-span');
+saveChangesToLocalStorage = true;
+
+const alertTextSpan = document.createElement('span');
+alertTextSpan.classList.add('alert-text');
+alertTextSpan.appendChild(document.createTextNode('Tracker state copied to your clipboard.'));
+document.body.prepend(document.createElement('br'));
+document.body.prepend(alertTextSpan);
+const secondAlertTextSpan = document.createElement('span');
+secondAlertTextSpan.classList.add('alert-text');
+secondAlertTextSpan.appendChild(document.createTextNode('Tracker state copied to your clipboard.'));
+
+const clearTrackerButton = document.createElement('button');
+clearTrackerButton.id = 'clear-tracker-button';
+clearTrackerButton.onclick = () => clearTrackerSave(true);
+clearTrackerButton.appendChild(document.createTextNode('Clear Tracker Save'));
+document.body.appendChild(clearTrackerButton);
+
+clearTrackerButton.after(secondAlertTextSpan);
+
+spoilerStateForm.addEventListener('keypress', event => {
+    if (event.keyCode === 13) localStorage.setItem('trackerState', spoilerStateForm.value);
+});
+
+var savedSeed = localStorage.getItem('savedSeed');
+var romSeed = parseInt(romSeedSpan.innerHTML);
+var clearedTracker = false;
+if (savedSeed == null) {
+    localStorage.setItem('savedSeed', romSeed);
+} else if (savedSeed != romSeed) {
+    savedSeed = romSeed;
+    localStorage.setItem('savedSeed', savedSeed);
+    var currentSpoilerLogState = String(localStorage.getItem('trackerState'));
+    
+    const targetHeading = document.querySelector('h2');
+    
+    copyButton = document.createElement('button');
+    copyButton.id = 'conditional-copy-state-button';
+    copyButton.style = 'background-color: red; border: 2px solid black';
+    copyButton.onclick = () => copyToClipboard(currentSpoilerLogState);
+    const copyButtonContent = document.createTextNode('Copy Previous Tracker State');
+    copyButton.appendChild(copyButtonContent);
+    document.body.insertBefore(copyButton, targetHeading);
+    
+    killButton = document.createElement('button');
+    killButton.id = 'kill-button';
+    killButton.onclick = () => { killConditionalButton() };
+    const killButtonContent = document.createTextNode('X');
+    killButton.appendChild(killButtonContent);
+    document.body.insertBefore(killButton, targetHeading);
+    
+    clearTrackerSave();
+    clearedTracker = true;
+    
+    alert('A different seed has been opened. Click the red button below the Spoiler Log State to copy the previous tracker state to your clipboard.');
+}
+document.body.style.display = 'block';
+
+if (localStorage.getItem('trackerState') == null) {
+    localStorage.setItem('trackerState', spoilerStateForm.value);
+} else if (!clearedTracker) {
+    spoilerStateForm.value = localStorage.getItem('trackerState');
+    loadItems();
+}
+
+const locationChecks = document.querySelectorAll('.location-check');
+locationChecks.forEach(location => {
+    location.addEventListener('click', event => {
+        localStorage.setItem('trackerState', spoilerStateForm.value);
+    });
+});
+const secondaryLocationChecks = document.querySelectorAll('.secondary-location-check');
+secondaryLocationChecks.forEach(location => {
+    location.addEventListener('click', event => {
+        localStorage.setItem('trackerState', spoilerStateForm.value);
+    });
+});
+    </script>
+    <script id="showCollected-style" type="text/plain" content="css"
+        replaces="LIGHT_MODE_STYLE=lightModeFormat; DARK_MODE_STYLE=darkModeFormat">
+.light-mode .show-highlight.show-collected [data-collected="true"] .newlocation {
+    ${LIGHT_MODE_STYLE};
+}
+.dark-mode .show-highlight.show-collected [data-collected="true"] .newlocation {
+    ${DARK_MODE_STYLE};
+}
+    </script>
+    <script id="showCollected-globals" type="text/plain">
+function updatedAllCollectedStatus() {
+    const collectedItems = Array.from(document.querySelectorAll('.location-check')).filter(elem => elem.checked);
+    collectedItems.forEach(elem => {
+        const tr = elem.closest('tr');
+        tr.setAttribute('data-collected', elem.checked.toString());
+    });
+    const knownCollectedTrs = Array.from(document.querySelectorAll('tr[data-collected="true"]'));
+    knownCollectedTrs.forEach(tr => {
+        const elem = tr.querySelector('.location-check');
+        if (!elem.checked) tr.removeAttribute('data-collected');
+    });
+}
+    </script>
+    <script id="showCollected-script" type="text/plain" stage="trackerStart" replaces="ENABLE_ON_START=enableOnStart">
+const showCollectedCheckbox = document.querySelector('#highlight-collected');
+showCollectedCheckbox.addEventListener('click', e => {
+    const itemReplacementsTable = document.querySelector('#item-replacements');
+    if (itemReplacementsTable) {
+        itemReplacementsTable.classList.remove('show-collected');
+        if (e.target.checked) {
+            itemReplacementsTable.classList.add('show-collected');
+        }
+    }
+});
+Array.from(document.querySelectorAll('.location-check,.secondary-location-check'))
+    .forEach(location => {
+        location.addEventListener('click', event => {
+            const trs = document.querySelectorAll(`tr[data-newlocationid="${event.target.closest('tr').getAttribute('data-newlocationid')}"]`);
+            Array.from(trs).forEach(tr => tr.setAttribute('data-collected', event.target.checked.toString()));
+        });
+    });
+const loadItemsHandle = loadItems;
+window.loadItems = function () {
+    loadItemsHandle();
+    updatedAllCollectedStatus();
+}
+updatedAllCollectedStatus();
+if ("${ENABLE_ON_START}".toLowerCase() !== showCollectedCheckbox.checked.toString().toLowerCase())
+    showCollectedCheckbox.click();
+    </script>
+    <script id="showCollected-shortcuts" type="text/plain">
+window.addEventListener('trackerStart', () => {
+    shortcutManager.registerBinding('showCollected', 'toggle', 'ctrl shift c');
+})
+window.addEventListener('keydown', (event) => {
+    if (shortcutManager.isLocked) return;
+
+    shortcutManager.runOnMatch(event, 'showCollected:toggle',
+        () => {
+            document.getElementById('highlight-collected').click();
+            event.preventDefault();
+        }
+    );
+});
+    </script>
+    <script id="mapNavigator-popup-globals" type="text/plain">
+const mapCommunicator = new WindowCommunicator('mapNavigator');
+const mapContainer = document.getElementById('map-container');
+const floatingMapButtons = document.querySelectorAll('.floating-map-button');
+
+function goToId(destination) {
+    mapCommunicator.postMessage('goto << ' + destination);
+}
+
+function checkClearAllButtons() {
+    floatingMapButtons.forEach(mbn => hideIfAllChecked(mbn));
+}
+
+function hideIfAllChecked(mapButton) {
+    mapCommunicator.postMessage('checkRegion << .' + mapButton.getAttribute('data-regionclass'));
+}
+
+mapCommunicator.newTask('updateRegionVisibility', (event, region, visibility) => {
+    if (region == null || visibility == null) throw new Error('mapNavigator:updateRegionVisibility response expected two inputs.');
+    const mapButton = document.querySelector(`[data-regionclass="${region}"]`);
+    mapButton.style.visibility = visibility;
+});
+mapCommunicator.newTask('checkAll', () => {
+    checkClearAllButtons();
+});
+
+/*
+mapCommunicator.onmessage = (event) => {
+    const taskParts = event.data.split('<<').map(elem => elem.trim());
+    const name = taskParts[0];
+    const values = taskParts.slice(1);
+    switch (name) {
+        case 'mapNavigator:updateRegionVisibility':
+            if (values.length < 2) throw new Error('mapNavigator:updateRegionVisibility response expected two inputs. Actual: ' + values.length);
+            const mapButton = document.querySelector(`[data-regionclass="${values[0]}"]`);
+            mapButton.style.visibility = values[1];
+            break;
+        case 'mapNavigator:checkAll':
+            checkClearAllButtons();
+            break;
+        otherwise:
+            console.log(event);
+    }
+}
+*/
+mapContainer.style.display = 'block';
+mapCommunicator.postMessage("ready");
+    </script>
+    <script id="mapNavigator-communicator" type="text/plain">
+const mapCommunicator = new WindowCommunicator('mapNavigator');
+
+function goToId(destination) {
+    document.querySelector(destination).scrollIntoView();
+}
+
+function checkClearAllButtons() {
+    mapCommunicator.postMessage('checkAll');
+}
+
+function hideIfAllChecked(regionClassQuery) {
+    const regionChecks = Array.from(document.querySelectorAll(regionClassQuery));
+    const amountChecked = regionChecks.filter(cb => cb.checked).length;
+    mapCommunicator.postMessage(`updateRegionVisibility << ${regionClassQuery.substring(1)} << ${regionChecks.length === amountChecked ? 'hidden' : ''}`);
+}
+
+mapCommunicator.newTask('goto', (event, destination) => {
+    if (destination == null) throw new Error('mapNavigator:goto response expected one additional input');
+    goToId(destination);
+});
+mapCommunicator.newTask('checkRegion', (event, region) => {
+    if (region == null) throw new Error('mapNavigator:checkRegion response expected one additional input');
+    hideIfAllChecked(region);
+});
+mapCommunicator.newTask('ready', () => {
+    mapCommunicator.postMessage('checkAll');
+});
+
+/*
+mapCommunicator.onmessage = (event) => {
+    const taskParts = event.data.split('<<').map(elem => elem.trim());
+    const name = taskParts[0];
+    const values = taskParts.slice(1);
+    switch (name) {
+        case 'mapNavigator:goto':
+            if (values.length === 0) throw new Error('mapNavigator:goto response expected one input. Actual: ' + values.length);
+            goToId(values[0]);
+            break;
+        case 'mapNavigator:checkRegion':
+            if (values.length === 0) throw new Error('mapNavigator:checkRegion response expected one input. Actual: ' + values.length);
+            hideIfAllChecked(values[0]);
+            break;
+        case 'mapNavigator:ready':
+            mapCommunicator.postMessage("mapNavigator:checkAll");
+            break;
+        otherwise:
+            console.log(event);
+    }
+}
+*/
+
+window.addEventListener('trackerStart', () => {
+    Array.from(document.querySelectorAll('.location-check')).forEach(location => {
+        location.addEventListener('click', event => {
+            var srcElem = event.target;
+            const tr = srcElem.closest('tr');
+            const currentClassList = Array.from(srcElem.classList).filter(elem => elem.includes('region'));
+            if (currentClassList.length != 0) {
+                hideIfAllChecked('.' + currentClassList[0]);
+            }
+        });
+    });
+});
+
+window.open(window.location.pathname.substring(1) + '?load=sharedModifier+mapNavigator', 'mapNavigatorWindow', 'popup,width=400,height=400');
+    </script>
+    <script id="mapNavigator-popup-style" type="text/plain" content="css">
+body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+}
+#navigation-container {
+    width: 100%;
+    height: 93vh;
+}
+#navigation-container * { 
+    float: right;
+}
+#map-container {
+    height: 100%;
+    width: 100%;
+}
+#map-image {
+    width: 100%;
+    height: 100%;
+}
+.floating-map-button {
+    float: none;
+    position: absolute;
+}
+    </script>
+    <script id="mapNavigator-popup-shortcuts" type="text/plain">
+window.addEventListener('trackerStart', () => {
+    shortcutManager.registerBinding('mapNavigator', 'reopen', 'shift m');
+});
+
+window.addEventListener('keydown', (event) => {
+    if (shortcutManager.isLocked) return;
+
+    const shortcutInfo = shortcutManager.check(event);
+    if (shortcutInfo == null || !shortcutInfo.pass) {
+        return;
+    }
+
+    if (shortcutInfo.name === 'mapNavigator:reopen') {
+        window.open(window.location.pathname.substring(1) + '?load=sharedModifier+mapNavigator', 'mapNavigatorWindow', 'popup,width=400,height=400');
+    }
+});
+    </script>
+    <script id="mapNavigator-globals" type="text/plain" replaces="HIDE_CLEARED=hideClearedLocations">
+function isMapVisible() {
+    return document.querySelector('#map-container').style.display !== 'none';
+}
+
+function toggleMapVisibility() {
+    const mapContainer = document.querySelector('#map-container');
+    const mapVisibilityButton = document.querySelector('#map-visibility-button');
+    const navHideableElements = document.querySelectorAll('.navigation-hideable');
+    if (isMapVisible()) {
+        mapVisibilityButton.innerHTML = 'Show Map';
+        mapContainer.style.display = 'none';
+        navHideableElements.forEach(elem => elem.style.display = 'none');
+    } else {
+        mapVisibilityButton.innerHTML = 'Hide Map';
+        mapContainer.style.display = 'block';
+        navHideableElements.forEach(elem => elem.style.display = 'block');
+    }
+}
+
+const cleanUpSubRegions = (e) => {
+    Array.from(
+        document.querySelector('#map-container')
+        .querySelectorAll('.navigation-button-temporary')
+    ).forEach((btn) => {
+        btn.style.visible = 'none';
+        setTimeout(() => btn.remove(), 100);
+    });
+    e.target.removeEventListener('focusout', cleanUpSubRegions);
+}
+
+function showSubregionButtons(e, rowIdsRaw) {
+    e.preventDefault();
+    const sourceBtn = e.target;
+    const mapContainer = document.getElementById('map-container');
+    cleanUpSubRegions({ target: sourceBtn });
+    sourceBtn.focus();
+    sourceBtn.addEventListener('focusout', cleanUpSubRegions);
+    const computedBtnStyle = window.getComputedStyle(sourceBtn);
+    const height = parseInt(computedBtnStyle.getPropertyValue("height"));
+    const top = parseInt(computedBtnStyle.getPropertyValue("top"));
+    var side = parseInt(sourceBtn.style.right) < 50 ? 'right' : 'left';
+    var horizontal = parseInt(computedBtnStyle.getPropertyValue(side));
+    const rowIds = rowIdsRaw.slice(2, -2).split('","');
+    for (var i = 0; i < rowIds.length; i++) {
+        const btn = document.createElement('button');
+        const subregion = rowIds[i];
+        btn.innerText = subregion.split('-').slice(0, -1).join(' ');
+        btn.className = 'navigation-button-temporary';
+        btn.style.backgroundColor = sourceBtn.style.backgroundColor;
+        btn.style.border = sourceBtn.style.border;
+        btn.style.color = sourceBtn.style.color;
+        mapContainer.appendChild(btn);
+        btn.style.position = 'absolute';
+        btn.style[side] = horizontal + 'px';
+        btn.style.top = top + height * (i + 1) + 'px';
+        btn.addEventListener('click', () => goToId('#' + subregion));
+    }
+}
+
+function goToId(destination) {
+    document.querySelector(destination).scrollIntoView();
+}
+
+function checkClearAllButtons() {
+    const floatingMapButtons = document.querySelectorAll('.floating-map-button');
+    floatingMapButtons.forEach(mbn => hideIfAllChecked(mbn));
+}
+
+function hideIfAllChecked(mapButton) {
+    const regionClassQuery = '.' + mapButton.getAttribute('data-regionclass');
+    var regionChecks = Array.from(document.querySelectorAll(regionClassQuery));
+    var amountChecked = regionChecks.filter(cb => cb.checked).length;
+    mapButton.style.visibility = regionChecks.length == amountChecked && ${HIDE_CLEARED} ? 'hidden' : '';
+}
+
+function updateMapSize(width) {
+    document.querySelector('#navigation-container').style.width = width + 'px';
+}
+    </script>
+    <script id="mapNavigator-mapController" type="text/plain" stage="trackerStart">
+const mapContainer = document.querySelector('#map-container');
+
+mapContainer.style.display = 'block';
+
+var defaultWidth;
+var minWidth;
+var maxWidth;
+const resizingSlider = document.querySelector('#map-resizing-slider');
+
+defaultWidth = document.querySelector('#navigation-container').offsetWidth;
+defaultWidth = defaultWidth === 0 ? 700 : defaultWidth;
+minWidth = Math.round(defaultWidth / 2);
+maxWidth = Math.round(defaultWidth * 1.5);
+resizingSlider.min = minWidth;
+resizingSlider.max = maxWidth;
+resizingSlider.value = defaultWidth;
+var heldVar;
+Array.from(document.querySelectorAll('.location-check')).forEach(location => {
+    location.addEventListener('click', event => {
+        var srcElem = event.target;
+        const tr = srcElem.closest('tr');
+        const currentClassList = Array.from(srcElem.classList).filter(elem => elem.includes('region'));
+        heldVar = event.target;
+        if (currentClassList.length != 0) {
+            hideIfAllChecked(document.querySelector('.floating-map-button[data-regionclass="' + currentClassList[0] + '"]'));
+        }
+    });
+});
+    </script>
+    <script id="mapNavigator-shortcuts" type="text/plain" replaces="INVERT_SIZE_SHORTCUTS=invertSizeShortcuts">
+var resizingSlider;
+window.addEventListener('trackerStart', () => {
+    shortcutManager.registerBinding('mapNavigator', 'decreaseSize', ', ...');
+    shortcutManager.registerBinding('mapNavigator', 'minimize', 'shift <');
+    shortcutManager.registerBinding('mapNavigator', 'increaseSize', '. ...');
+    shortcutManager.registerBinding('mapNavigator', 'maximize', 'shift >');
+    shortcutManager.registerBinding('mapNavigator', 'toggle', 'shift m');
+    resizingSlider = document.querySelector('#map-resizing-slider');
+});
+
+window.addEventListener('keydown', (event) => {
+    if (shortcutManager.isLocked) return;
+
+    const shortcutInfo = shortcutManager.check(event);
+    if (shortcutInfo == null || !shortcutInfo.pass) {
+        return;
+    }
+
+    if (shortcutInfo.name === 'mapNavigator:toggle') {
+        toggleMapVisibility();
+        event.preventDefault();
+    } else if (isMapVisible()) {
+        var targetSize;
+        switch (shortcutInfo.name) {
+            case 'mapNavigator:decreaseSize':
+                targetSize = Math.max(resizingSlider.min, resizingSlider.value - 50);
+                break;
+            case 'mapNavigator:minimize':
+                targetSize = resizingSlider.min;
+                break;
+            case 'mapNavigator:increaseSize':
+                targetSize = Math.min(resizingSlider.max, parseInt(resizingSlider.value) + 50);
+                break;
+            case 'mapNavigator:maximize':
+                targetSize = resizingSlider.max;
+                break;
+            default:
+                // do nothing. Handled after switch statement.
+        }
+        // a valid shortcut was pressed, but not one that this listener cares about
+        if (targetSize == null) return;
+        event.preventDefault();
+        resizingSlider.value = targetSize;
+        updateMapSize(targetSize);
+    }
+});
+    </script>
+    <script id="mapNavigator-style" type="text/plain" content="css">
+#navigation-container {
+    position: fixed;
+    top: 30px;
+    right: 0px;
+    width: 700px;
+}
+#navigation-container * { float: right; }
+#map-image {
+    float: none;
+    width: 100%;
+}
+.floating-map-button {
+    float: none;
+    position: absolute;
+}
+    </script>
+    <script id="mapNavigator-map" type="text/plain" content="html">
+<div id='navigation-container'>
+    <div id='map-container' class='navigation-hideable'>
+        <img id='map-image' alt='You need to get a map image.'>
+    </div>
+    <input id='map-resizing-slider' class='navigation-hideable' type='range' onchange='updateMapSize(this.value)'>
+    <label class='navigation-hideable'>Resize map</label>
+</div>
+    </script>
+    <script id="textSearch-globals" type="text/plain">
+function filterLocationsByName(arr, str) {
+    return arr.filter(elem => {
+        const simpleString = elem.innerText.trim().toLowerCase().replace(/\s/g, '');
+        const simpleUserString = str.trim().toLowerCase().replace(/\s/g, '');
+        if (simpleUserString.includes('*')) {
+            // AND queries
+            const simpleUserStringParts = simpleUserString.split('*');
+            for (var i = 0; i < simpleUserStringParts.length; i++) {
+                const testcase = simpleUserStringParts[i];
+                if (!simpleString.includes(testcase)) return false;
+            }
+            return true;
+        } else if (simpleUserString.includes('+')) {
+            // OR queries
+            const simpleUserStringParts = simpleUserString.split('+');
+            for (var i = 0; i < simpleUserStringParts.length; i++) {
+                const testcase = simpleUserStringParts[i];
+                if (simpleString.includes(testcase)) return true;
+            }
+            return false;
+        } else {
+            return simpleString.includes(simpleUserString);
+        }
+    });
+}
+    </script>
+    <script id="textSearch-script" type="text/plain" stage="trackerStart" replaces="CLEAR_TIME=idleClearTimeMs">
+const locationList = Array.from(document.querySelectorAll('.newlocation[tabindex="0"]'));
+const textSearchContainer = document.getElementById('text-search-container');
+const textSearchField = document.querySelector('#text-search-content input');
+const noMatchWarning = document.getElementById('text-search-warning');
+var runningString = '';
+const clearTime = ${CLEAR_TIME};
+var lastEventTime = new Date().getTime();
+var currentMatches = [];
+var matchIndex = 0;
+
+shortcutManager.registerBinding('textSearch', 'nextResult', 'Enter ...');
+shortcutManager.registerBinding('textSearch', 'previousResult', 'SHIFT Enter ...');
+shortcutManager.registerBinding('textSearch', 'cancel', 'Escape');
+
+window.addEventListener('keydown', (event) => {
+    if (shortcutManager.isLocked || shortcutManager.hasConditionalLockTypeNotFrom("textSearch", "typing")) return;
+
+    const currentActive = document.activeElement;
+
+    // if in the spoiler log state textbox, do nothing here
+    if (
+        currentActive != null &&
+        currentActive.nodeName === 'INPUT' &&
+        currentActive.id === 'spoilerLogState'
+    ) {
+        return;
+    }
+
+    const attemptedShortcut = shortcutManager.check(event);
+    var shortcutName = '';
+    if (attemptedShortcut != null) {
+        const nameParts = attemptedShortcut.name.split(':');
+        const familyName = nameParts.shift();
+        if (familyName !== 'textSearch') {
+            console.log('TextSearch keydown abandoned for ' + attemptedShortcut.name);
+            return;                
+        } else {
+            shortcutName = nameParts.shift();
+            event.preventDefault();
+        }
+    }
+
+    // if toggling a checkbox, do nothing here
+    if (
+        shortcutName === '' && 
+        event.key === ' ' && 
+        currentActive != null && 
+        currentActive.nodeName === 'INPUT' && 
+        currentActive.type === "checkbox"
+    ) {
+        return;
+    }
+
+    if (shortcutName === 'nextResult' || shortcutName === 'previousResult') {
+        if (shortcutName === 'nextResult') {
+            matchIndex = matchIndex === currentMatches.length - 1 ? 0 : matchIndex + 1;
+        } else {
+            matchIndex = matchIndex === 0 ? currentMatches.length - 1 : matchIndex - 1;
+        }
+        if (currentMatches.length > 0) {
+            currentMatches[matchIndex].scrollIntoView({block: "center"});
+            currentMatches[matchIndex].focus();
+            textSearchField.value = runningString;
+            textSearchContainer.style.display = 'block';
+            lastEventTime = event.timeStamp;
+            setTimeout(() => {
+                if (event.timeStamp === lastEventTime) {
+                    textSearchField.value = '';
+                    setTimeout(() => {
+                        if (event.timeStamp === lastEventTime) {
+                            textSearchContainer.style.display = 'none';
+                        }
+                    }, 500);
+                }
+            }, clearTime);
+        }
+        return;
+    } else if (event.key === 'Tab') {
+        return;
+    }
+
+    if (event.ctrlKey && shortcutName === '') return;
+
+    const normalMatch = event.key.match(/^[a-z|\-|'|\*|\+]/);
+    
+    if (
+        normalMatch == null && 
+        shortcutName === '' && 
+        event.key !== ' ' && 
+        event.key !== 'Backspace'
+    ) {
+        return;
+    }
+
+    // clear search string if enough time has elapsed
+    const elapsedTime = event.timeStamp - lastEventTime;
+    lastEventTime = event.timeStamp;
+    if (elapsedTime >= clearTime) {
+        runningString = '';
+        currentMatches = [];
+    }
+
+    if (shortcutName === 'cancel') {
+        runningString = '';
+        currentMatches = [];
+        locationList[0].focus();
+        locationList[0].blur();
+    }
+
+    if (shortcutName === '') {
+        if (event.key === ' ') {
+            // if there is some non-whitespace character in the current search, append a space
+            if (runningString.length > 0) {
+                event.preventDefault();
+                runningString += event.key;
+            }
+        } else if (event.key === 'Backspace') {
+            event.preventDefault();
+            if (runningString.length > 0) {
+                runningString = runningString.slice(0, -1);
+            }
+        } else if (Array.isArray(normalMatch)) {
+            runningString += event.key;
+        }
+    }
+    textSearchField.value = runningString;
+    setTimeout(() => { 
+        if (event.timeStamp === lastEventTime) {
+            textSearchField.value = '';
+            noMatchWarning.style.display = 'none';
+            setTimeout(() => {
+                if (event.timeStamp === lastEventTime) {
+                    textSearchContainer.style.display = 'none';
+                }
+            }, 500);
+        }
+    }, clearTime);
+    if (runningString.length > 0) {
+        if (
+            (currentMatches.length === 0 && runningString.length === 1) ||
+            event.key === 'Backspace' ||
+            (runningString.lastIndexOf('+') != -1 && runningString.lastIndexOf('+') != runningString.length - 1)
+        ) {
+            currentMatches = filterLocationsByName(locationList, runningString);
+        } else {
+            if (runningString.lastIndexOf('.'))
+            currentMatches = filterLocationsByName(currentMatches, runningString);
+        }
+        // if there are matches, select the first
+        if (currentMatches.length > 0) {
+            currentMatches[0].scrollIntoView({block: "center"});
+            currentMatches[0].focus();
+            matchIndex = 0;
+            noMatchWarning.style.display = 'none';
+            textSearchContainer.style.display = 'block';
+        } else {
+            noMatchWarning.style.display = 'block';
+        }
+    }
+});
+    </script>
+    <script id="textSearch-field" type="text/plain" content="html">
+<div id='text-search-container'>
+    <div class='text-search-spacer'>
+        <p id='text-search-label'>Search:</p>
+    </div>
+    <div id='text-search-content'>
+        <input type='text' readonly></input>
+    </div>
+    <div class='text-search-spacer'>
+        <p id='text-search-warning'>No such match</p>
+    </div>
+</div>
+    </script>
+    <script id="textSearch-style" type="text/plain" content="css">
+#text-search-container {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    > * {
+        float: left;
+    }
+    overflow: hidden;
+    display: none;
+}
+#text-search-container .text-search-spacer {
+    width: 40%;
+    * {
+        margin: 0;
+        padding: 0 20px;
+    }
+}
+#text-search-label {
+    float: right;
+    background: purple;
+}
+#text-search-warning {
+    float: left;
+    color: red;
+    background: purple;
+    display: none;
+}
+#text-search-content {
+    width: 20%;
+    * {
+        width: 100%;
+    }
+}
+/*
+.light-mode .is-being-searched {
+    ${LIGHT_MODE_STYLE};
+}
+.dark-mode .is-being-searched {
+    ${DARK_MODE_STYLE};
+}
+*/
+    </script>
+    <script id="markedLogGenerator-content" type="text/plain" content="html">
+<button id="generate-marked-spoiler-button" onclick="generateMarkedSpoilerLog()">Export Marked Spoiler Log</button>
+    </script>
+    <script id="markedLogGenerator-globals" type="text/plain">
+function replaceTail(str, newTail, delim) {
+    if (delim == null) delim = '-';
+    var nameParts = str.split(delim);
+    nameParts.pop();
+    nameParts.push(newTail);
+    return nameParts.join(delim);
+}
+
+function generateMarkedSpoilerLog() {
+    const versionNumber = document.querySelector('#version-span').innerHTML;
+    const settingsString = document.querySelector('#settings-tag').innerHTML;
+    const romSeed = document.querySelector('#seed-span').innerHTML;
+    
+    var outputText = 'Version:         ' + versionNumber + '\nSettings:         ' + settingsString + '\nSeed:             ' + romSeed + '\n\n ';
+    
+    const entranceTable = document.querySelector('#dungeon-entrance-replacements');
+    if (entranceTable) {
+        const entrances = Array.from(entranceTable.querySelectorAll('.newlocation'));
+        const entranceChecks = Array.from(entranceTable.querySelectorAll('.entrance-check'));
+        const entranceReplacements = Array.from(entranceTable.querySelectorAll('.spoiler-span'));
+        outputText += 'Entrance                 Destination\n\n';
+        outputText += convertToPrintable([22, -1], entrances, entranceReplacements, entranceChecks) + '\n';
+    }
+    
+    const itemReplacementsTable = document.querySelector('#item-replacements');
+    if (itemReplacementsTable) {
+        const checkLocations = Array.from(itemReplacementsTable.querySelectorAll('.newlocation'));
+        const regions = Array.from(itemReplacementsTable.querySelectorAll('.region td')).map(td => { return {'name' : td.innerHTML, 'id' : td.id }; });
+        outputText += 'Location                                              Item\n\n';
+        regions.forEach(region => {
+            const regionClass = replaceTail(region.id, 'check');
+            const regionChecks = Array.from(itemReplacementsTable.querySelectorAll('.' + regionClass));
+            const regionCheckParents = regionChecks.map(elem => elem.parentNode.parentNode);
+            const regionLocations = regionCheckParents.map(elem => elem.querySelector('.newlocation'));
+            const regionReplacements = regionCheckParents.map(elem => elem.querySelector('.spoiler-span'));
+            outputText += ' ' + region.name + '\n';
+            outputText += convertToPrintable([51, -1], regionLocations, regionReplacements, regionChecks) + '\n';
+        });
+    }
+    
+    const gossipStoneHintsTable = document.querySelector('#gossip-stone-hints');
+    if (gossipStoneHintsTable) {
+        const gossipLocations = gossipStoneHintsTable.querySelectorAll('.gossip-location');
+        const gossipHints = gossipStoneHintsTable.querySelectorAll('.gossip-hint');
+        outputText += '\n Gossip Stone                 Message\n';
+        outputText += convertToPrintable([30, -1], gossipLocations, gossipHints);
+    }
+    
+    var elem = document.createElement('a');
+    elem.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(outputText));
+    elem.setAttribute('download', 'MMR-Marked-Spoiler-Log-' + romSeed + '.txt');
+    elem.style.display = 'none';
+    document.body.appendChild(elem);
+    elem.click();
+    document.body.removeChild(elem);
+}
+
+function convertToPrintable(columnWidths, firstColumn, secondColumn, rowChecks) {
+    var outputText = '';
+    var limitedSecondColumn = true;
+    if (!Array.isArray(columnWidths)) {
+        columnWidths = [columnWidths, 30];
+    } else if (columnWidths.length != 2) {
+        columnWidths = [51, 30];
+    } else if (columnWidths[1] == -1) {
+        limitedSecondColumn = false;
+    }
+    const printChecks = rowChecks != null;
+    for (var i = 0; i < firstColumn.length; i++) {
+        var fColumnValue = firstColumn[i].innerHTML;
+        var sColumnValue = secondColumn[i].getAttribute('data-content');
+        outputText += padString(fColumnValue, columnWidths[0]);
+        if (printChecks) {
+            if (rowChecks[i].checked) {
+                outputText += '[X] ';
+            } else {
+                outputText += '[ ] ';
+            }
+        }
+        outputText += '-> ';
+        if (limitedSecondColumn) {
+            outputText += padString(sColumnValue, columnWidths[1]);
+        } else {
+            outputText += sColumnValue;
+        }
+        
+        outputText += '\n';
+    }
+    return outputText;
+}
+
+const paddingString = '                                                   ';
+
+function padString(str, len) {
+    return str + new Array(Math.max(len - str.length + 1, 0)).join(' ');
+}
+    </script>
+    <script id="shortcutManager-dialogs" type="text/plain" content="html">
+<head>
+    <style>
+        #shortcut-bindings-table {
+            border-collapse: collapse;
+            border: 2px solid rgb(140 140 140);
+            font-family: sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+
+            thead {
+                background-color: rgb(228 240 245);
+            }
+
+            th,
+            td {
+                border: 1px solid rgb(160 160 160);
+                padding: 8px 10px;
+            }
+
+            tbody>tr:nth-of-type(even) {
+                background-color: rgb(237 238 242);
+            }
+
+            p {
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body>
+    <dialog id="shortcut-bindings-popup">
+        <h2>Shortcut Bindings</h2>
+        <p>Click a binding to change it.</p>
+        <table id="shortcut-bindings-table">
+            <thead>
+                <tr>
+                    <th scope="col">Family</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Binding</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+        <form method="dialog">
+            <button>Close</button>
+        </form>
+    </dialog>
+    <dialog id="shortcut-rebind-popup">
+        <p>Choose a new binding</p>
+        <input id="binding-stroke-display" type="text" readonly />
+        <input id="allow-repeats" type="checkbox"
+            title="Whether to accept holding down a binding as multiple shortcut activations">Allow
+        repeat</input>
+        <form method="dialog">
+            <button id="accept-shortcut-rebind">Accept</button>
+            <button id="cancel-shortcut-rebind">Cancel</button>
+        </form>
+    </dialog>
+</body>
+    </script>
+    <script id="shortcutManager-globals" type="text/plain">
+class ShortcutBinding {
+    constructor(family, name, strokeText, onChangeFnHandle) {
+        this.#bindingFamily = family;
+        this.#bindingName = name;
+        this.#keyStrokeText = ShortcutBinding.generateCleanStroke(strokeText);
+        this.#defaultKeyStrokeText = this.strokeText;
+        this.#keyBinding = ShortcutBinding.generateKeyObj(strokeText);
+        this.#onChangeFnHandle = onChangeFnHandle;
+        
+        const tr = document.createElement('tr');
+        const tdFamily = document.createElement('td');
+        const tdName = document.createElement('td');
+        tdName.appendChild(document.createTextNode(this.name));
+        const tdBinding = document.createElement('td');
+        const bindingButton = document.createElement('button');
+        bindingButton.appendChild(document.createTextNode(this.strokeText));
+        tdBinding.appendChild(bindingButton);
+        
+        tr.appendChild(tdFamily);
+        tr.appendChild(tdName);
+        tr.appendChild(tdBinding);
+
+        this.#bindingButton = bindingButton;
+        this.#tableRow = tr;
+    }
+    saveBinding() {
+        localStorage.setItem(this.family + ':' + this.name, this.strokeText);
+    }
+    loadBinding() {
+        const loadedText = localStorage.getItem(this.family + ':' + this.name);
+        if (loadedText != null) {
+            this.strokeText = loadedText;
+        } else {
+            this.saveBinding();
+        }
+    }
+    #onChangeFnHandle;
+    get onChange() {
+        return this.#onChangeFnHandle;
+    }
+    #bindingFamily;
+    get family() {
+        return this.#bindingFamily;
+    }
+    #bindingName;
+    get name() {
+        return this.#bindingName;
+    }
+    #defaultKeyStrokeText;
+    get defaultStrokeText() {
+        return this.#defaultKeyStrokeText;
+    }
+    #keyStrokeText;
+    get strokeText() {
+        return this.#keyStrokeText;
+    }
+    set strokeText(newValue) {
+        const oldBindingValue = this.binding;
+        this.#keyStrokeText = newValue;
+        this.#keyBinding = ShortcutBinding.generateKeyObj(newValue);
+        this.button.innerText = newValue;
+        this.onChange(this, oldBindingValue);
+
+        if (localStorageEnabled) this.saveBinding();
+    }
+    #keyBinding;
+    get binding() {
+        return this.#keyBinding;
+    }
+    #tableRow;
+    get row() {
+        return this.#tableRow;
+    }
+    #bindingButton;
+    get button() {
+        return this.#bindingButton;
+    }
+    static findAndRemoveFromAll(value, ...arrays) {
+        if (arrays.length === 0) throw new Error("Expected at least 1 array.");
+        const index = arrays[0].indexOf(value);
+        const found = index != -1;
+        if (found) {
+            arrays.forEach((arr) => {
+                arr.splice(index, 1);
+            });
+        }
+        return found;
+    }
+    static generateCleanStroke(strokeText) {
+        var tidiedText = strokeText.replace(/\s+/g, ' ').trim();
+        const originalParts = tidiedText.split(' ');
+        const upperCaseParts = originalParts.map((elem) => elem.toUpperCase());
+        
+        const ctrl = ShortcutBinding.findAndRemoveFromAll("CTRL", upperCaseParts, originalParts);
+        var shift = ShortcutBinding.findAndRemoveFromAll("SHIFT", upperCaseParts, originalParts);
+        const alt = ShortcutBinding.findAndRemoveFromAll("ALT", upperCaseParts, originalParts);
+        const repeat = ShortcutBinding.findAndRemoveFromAll("...", upperCaseParts, originalParts);
+
+        if (originalParts.length !== 1) {
+            throw new Error('Invalid binding: ' + strokeText);
+        }
+
+        var shortcutKey = originalParts.pop();
+        
+        if (shortcutKey.length === 1) {
+            shortcutKey = shortcutKey.toUpperCase();
+        }
+        
+        var outputText = '';
+
+        if (ctrl) outputText += 'CTRL';
+        if (shift) outputText += ' SHIFT';
+        if (alt) outputText += ' ALT';
+        outputText += ' ' + shortcutKey;
+        if (repeat) outputText += ' ...';
+        
+        return outputText.trim();
+    }
+    static generateKeyObj(strokeText) {
+        const tidiedText = strokeText.replace(/\s+/g, " ").trim();
+        const originalParts = tidiedText.split(" ");
+        const upperCaseParts = originalParts.map((elem) => elem.toUpperCase());
+    
+        const ctrl = ShortcutBinding.findAndRemoveFromAll("CTRL", upperCaseParts, originalParts);
+        var shift = ShortcutBinding.findAndRemoveFromAll("SHIFT", upperCaseParts, originalParts);
+        const alt = ShortcutBinding.findAndRemoveFromAll("ALT", upperCaseParts, originalParts);
+        const repeat = ShortcutBinding.findAndRemoveFromAll("...", upperCaseParts, originalParts);
+    
+        if (originalParts.length !== 1) {
+            throw new Error("Invalid binding: " + strokeText);
+        }
+    
+        var key = originalParts.pop();
+    
+        if (key.length > 1) {
+            const asciiCode = key.match(/^\[(.*)\]$/);
+            if (asciiCode != null) {
+                key = String.fromCharCode(asciiCode[1]);
+                if (key.match(/^[A-Z]$/) != null) {
+                    shift = true;
+                }
+            }
+        } else {
+            key = key.toUpperCase();
+        }
+    
+        return { ctrl, shift, alt, key, repeat };
+    }
+}
+class ShortcutBindingManager {
+    constructor() {
+        const booleanOptions = [false, true];
+        booleanOptions.forEach((ctrl) => {
+            this.bindingTree[ctrl] = {};
+            booleanOptions.forEach((shift) => {
+                this.bindingTree[ctrl][shift] = {};
+                booleanOptions.forEach((alt) => {
+                    this.bindingTree[ctrl][shift][alt] = {};
+                });
+            });
+        });
+        this.#popupElement = document.getElementById('shortcut-bindings-popup');
+        this.#tableElement = document.getElementById('shortcut-bindings-table');
+        this.#editorElement = document.getElementById('shortcut-rebind-popup');
+    }
+    registerBinding(family, name, strokeText) {
+        const newBinding = new ShortcutBinding(family, name, strokeText, 
+            (binding, oldBindingPath) => {
+                this.updateBinding(binding, oldBindingPath);
+            }
+        );
+        this.#storeBinding(newBinding);
+    }
+    rebind(family, name, strokeText) {
+        const targetBinding = this.bindings.find(
+            (elem) => elem.family === family && elem.name === name
+        );
+        if (!targetBinding) {
+            throw new Error(
+                "Cannot rebind a binding that doesn't exist : " + family + ":" + name
+            );
+        }
+        targetBinding.strokeText = strokeText;
+    }
+    updateBinding(binding, oldBindingPath) {
+        var { ctrl, shift, alt, key } = oldBindingPath;
+        delete this.bindingTree[ctrl][shift][alt][key];
+        var { ctrl, shift, alt, key } = binding.binding;
+        this.bindingTree[ctrl][shift][alt][key] = binding;
+    }
+    check(event) {
+        var attemptedKey = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+        if (attemptedKey === ' ') attemptedKey = 'Space';
+        const shortcutObj = this.bindingTree[event.ctrlKey][event.shiftKey][event.altKey][attemptedKey];
+        if (shortcutObj == null) return null;
+        return { name: shortcutObj.family + ':' + shortcutObj.name, pass: shortcutObj.repeat || !event.repeat };
+    }
+    runOnMatch(event, name, fnHandle, options = {}) {
+        if (typeof(options) !== 'object') options = {};
+        options.preventDefaultOnPartialMatch = options.preventDefaultOnPartialMatch == null ? true : options.preventDefaultOnPartialMatch;
+        options.preventDefault = options.preventDefault == null ? true : options.preventDefault;
+
+        const shortcutInfo = this.check(event);
+        if (shortcutInfo && shortcutInfo.name === name) {
+            if (options.preventDefaultOnPartialMatch && options.preventDefault) {
+                event.preventDefault();
+            }
+            if (shortcutInfo.pass) {
+                fnHandle();
+                if (!options.preventDefaultOnPartialMatch && options.preventDefault) {
+                    event.preventDefault();
+                }
+            }
+        }
+    }
+    showDialog() {
+        if (!this.popup.hasAttribute('open')) this.popup.showModal();
+    }
+    showRebind(binding) {
+        var currentStrokeText = binding.strokeText;
+        const editor = this.editor;
+        const strokeTextBox = document.getElementById('binding-stroke-display');
+        const allowRepeatsCheck = document.getElementById('allow-repeats');
+        const acceptRebindButton = document.getElementById('accept-shortcut-rebind');
+        const cancelRebindButton = document.getElementById('cancel-shortcut-rebind');
+        
+        strokeTextBox.value = currentStrokeText;
+        allowRepeatsCheck.checked = currentStrokeText.includes(' ...');
+
+        const keydownListener = (event) => {
+            event.preventDefault();
+            var attemptedKey = event.key.toUpperCase();
+            if (attemptedKey.length > 1) {
+                if (['control', 'alt', 'shift'].includes(attemptedKey)) {
+                    return;
+                }
+                attemptedKey = event.key;
+            } else if (attemptedKey === ' ') {
+                attemptedKey = 'Space';
+            }
+            currentStrokeText = '';
+            if (event.ctrlKey) {
+                currentStrokeText += 'CTRL';
+            }
+            if (event.shiftKey) {
+                currentStrokeText += ' SHIFT';
+            }
+            if (event.altKey) {
+                currentStrokeText += ' ALT';
+            }
+            currentStrokeText += ' ' + attemptedKey;
+            if (allowRepeatsCheck.checked) {
+                currentStrokeText += ' ...';
+            }
+            currentStrokeText = currentStrokeText.trim();
+            strokeTextBox.value = currentStrokeText;
+        }
+        const checkboxToggleListener = () => {
+            if (allowRepeatsCheck.checked) {
+                currentStrokeText += ' ...';
+            } else {
+                currentStrokeText = currentStrokeText.replace(' ...', '');
+            }
+            strokeTextBox.value = currentStrokeText;
+        }
+        const acceptClickListener = () => {
+            const conflictBinding = this.bindings.find(elem => elem.strokeText === currentStrokeText);
+            if (conflictBinding != null && conflictBinding !== binding) {
+                alert('Conflict with ' + conflictBinding.family + ':' + conflictBinding.name + '... reverting.');
+                return;
+            }
+            binding.strokeText = currentStrokeText;
+            window.removeEventListener('keydown', keydownListener);
+            allowRepeatsCheck.removeEventListener('click', checkboxToggleListener);
+            acceptRebindButton.removeEventListener('click', acceptClickListener);
+            cancelRebindButton.removeEventListener('click', cancelClickListener);
+        }
+        const cancelClickListener = () => {
+            currentStrokeText = binding.strokeText;
+            acceptClickListener();
+        }
+
+        window.addEventListener('keydown', keydownListener);
+        allowRepeatsCheck.addEventListener('click', checkboxToggleListener);
+        acceptRebindButton.addEventListener('click', acceptClickListener);
+        cancelRebindButton.addEventListener('click', cancelClickListener);
+
+        editor.showModal();
+    }
+    setup() {
+        if (localStorageEnabled) this.bindings.forEach(binding => binding.loadBinding());
+        this.bindings.sort((a,b) => {
+            var sortValue;
+            if (a.family === b.family) {
+                sortValue = 0;
+            } else {
+                sortValue = a.family < b.family ? -1 : 1;
+            }
+            
+            if (!sortValue) {
+                if (a.name === b.name) {
+                    sortValue = 0;
+                } else {
+                    sortValue = a.name < b.name ? -1 : 1;
+                }
+            }
+            return sortValue;
+        });
+        const tbody = this.table.querySelector('tbody');
+        var previousBinding;
+        this.bindings.forEach(binding => {
+            if (previousBinding == null || binding.family !== previousBinding.family) {
+                const headingRow = document.createElement('tr');
+                const headingTd = document.createElement('th');
+                headingTd.appendChild(document.createTextNode(binding.family));
+                headingTd.setAttribute('colspan', '3');
+                headingRow.appendChild(headingTd);
+                tbody.appendChild(headingRow);
+            }
+            tbody.appendChild(binding.row);
+            binding.button.addEventListener('click', () => {
+                this.showRebind(binding);
+            });
+            previousBinding = binding;
+        });
+    }
+    revertAndRepair() {
+        this.bindings.forEach(binding => {
+            binding.strokeText = binding.defaultStrokeText;
+        });
+        this.bindings.forEach(binding => {
+            const { ctrl, shift, alt, key } = binding.binding;
+            if (!this.bindingTree[ctrl][shift][alt][key] !== binding) {
+                this.bindingTree[ctrl][shift][alt][key] = binding;
+            }
+        })
+    }
+    #storeBinding(binding) {
+        if (!this.bindings.includes(binding)) {
+            this.bindings.push(binding);
+        }
+        const { ctrl, alt, shift, key } = binding.binding;
+        this.bindingTree[ctrl][shift][alt][key] = binding;
+    }
+    #removeBinding(binding, removeCompletely = false) {
+        if (removeCompletely) {
+            const index = this.bindings.indexOf(binding);
+            if (index != -1) this.bindings.splice(index, 1);
+        }
+        const { ctrl, alt, shift, key } = binding.binding;
+        delete this.bindingTree[ctrl][shift][alt][key];
+    }
+    #popupElement;
+    get popup() {
+        return this.#popupElement;
+    }
+    #tableElement;
+    get table() {
+        return this.#tableElement;
+    }
+    #editorElement;
+    get editor() {
+        return this.#editorElement;
+    }
+    get isLocked() {
+        return this.popup.hasAttribute('open');
+    }
+    #conditionalLocks = {}
+    get conditionalLocks() {
+        const props = Object.getOwnPropertyNames(this.#conditionalLocks);
+        return props.map(prop => this.#conditionalLocks[prop]);
+    }
+    hasConditionalLockType(value) {
+        return !!this.getConditionalLockType(value).length;
+    }
+    hasConditionalLockTypeFrom(source, value) {
+        const currentLocks = this.getConditionalLockType(value);
+        if (currentLocks.length && currentLocks.find(elem => elem.split(":")[0] === source)) {
+            return true;
+        }
+        return false;
+    }
+    hasConditionalLockTypeNotFrom(source, value) {
+        const currentLocks = this.getConditionalLockType(value);
+        if (currentLocks.length && currentLocks.find(elem => elem.split(":")[0] !== source)) {
+            return true;
+        }
+        return false;
+    }
+    getConditionalLockType(value) {
+        return this.conditionalLocks.filter(elem => elem.split(":")[1] === value);
+    }
+    addConditionalLock(source, value) {
+        if (this.hasConditionalLockTypeFrom(source, value)) {
+            console.log(`Ingoring lock request (${source}:${value}). Already exists.`);
+            return;
+        }
+        const key = this.#generateConditionalLockKey(source, value);
+        this.#conditionalLocks[key] = `${source}:${value}`;
+        return key;
+    }
+    removeConditionalLock(key) {
+        if (typeof(key) !== "string") {
+            console.log('Invalid conditional lock key');
+            return;
+        }
+        delete this.#conditionalLocks[key];
+    }
+    #generateConditionalLockKey(source, value) {
+        return Date.now().toString(36) + source.slice(0, 2) + value.slice(0, 2);
+    }
+    get isDoublyLocked() {
+        return this.editor.hasAttribute('open');
+    }
+    bindings = [];
+    bindingTree = {};
+}
+
+const shortcutManager = new ShortcutBindingManager();
+    </script>
+    <script id="shortcutManager-activator" type="text/plain" stage="afterTrackerStart">
+shortcutManager.setup();
+window.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && event.key.toUpperCase() === 'B') {
+        event.preventDefault();
+        if (event.shiftKey) {
+            if (!shortcutManager.isDoublyLocked) {
+                if (confirm('Are you sure you want to revert all bindings to their defaults?')) {
+                    shortcutManager.revertAndRepair();
+                }
+            }
+        } else {
+            if (shortcutManager.isLocked) {
+                shortcutManager.popup.querySelector('form').querySelector('button').click();
+            } else {
+                shortcutManager.showDialog();
+            }
+        }
+    }
+});
+    </script>
+    <script id="timeKeeper-content" type="text/plain" content="html">
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="time-keeper-display" width="400" height="150"></canvas>
+</ body>
+    </script>
+    <script id="timeKeeper-popup-globals" type="text/plain">
+const segmentDisplay = document.getElementById('time-keeper-display');
+const ctx = segmentDisplay.getContext('2d');
+const backgroundColor = 'black';
+
+class Vector2 {
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+    }
+    clone() {
+        return new Vector2(this.x, this.y);
+    }
+    toArray() {
+        return [this.x, this.y];
+    }
+    static sum(...vectors) {
+        const outVector = vectors.shift().clone();
+        vectors.forEach(vector => {
+            outVector.x += vector.x;
+            outVector.y += vector.y;
+        });
+        return outVector;
+    }
+    static diff(...vectors) {
+        const outVector = vectors.shift().clone();
+        vectors.forEach(vector => {
+            outVector.x -= vector.x;
+            outVector.y -= vector.y;
+        });
+        return outVector;
+    }
+}
+
+function clearCanvas() {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, segmentDisplay.width, segmentDisplay.height);
+}
+
+function drawSymbol(position, symbol) {
+    const segments = [];
+    var paddingWidth = 0;
+    switch (symbol) {
+        case '.':
+            segments.push(getAbsoluteCoords(position, new Vector2(0, 130), new Vector2(6, 6)));
+            paddingWidth = 10;
+            break;
+        case ':':
+            segments.push(getAbsoluteCoords(position, new Vector2(0, 60), new Vector2(6, 6)));
+            segments.push(getAbsoluteCoords(position, new Vector2(0, 90), new Vector2(6, 6)));
+            paddingWidth = 10;
+            break;
+    }
+    if (segments.length === 0) {
+        if ('2357890'.includes(symbol)) { // top segment
+            segments.push(getAbsoluteCoords(position, new Vector2(3, 20), new Vector2(40, 5)));
+        }
+        if ('456890'.includes(symbol)) { // top left segment
+            segments.push(getAbsoluteCoords(position, new Vector2(3, 28), new Vector2(5, 40)));
+        }
+        if ('12347890'.includes(symbol)) { // top right segment
+            segments.push(getAbsoluteCoords(position, new Vector2(38, 28), new Vector2(5, 40)));
+        }
+        if ('2345689'.includes(symbol)) { // middle segment
+            segments.push(getAbsoluteCoords(position, new Vector2(3, 73), new Vector2(40, 5)));
+        }
+        if ('2680'.includes(symbol)) { // bottom left segment
+            segments.push(getAbsoluteCoords(position, new Vector2(3, 84), new Vector2(5, 40)));
+        }
+        if ('134567890'.includes(symbol)) { // bottom right segment
+            segments.push(getAbsoluteCoords(position, new Vector2(38, 84), new Vector2(5, 40)));
+        }
+        if ('2356890'.includes(symbol)) { // bottom segment
+            segments.push(getAbsoluteCoords(position, new Vector2(3, 130), new Vector2(40, 5)));
+        }
+        paddingWidth = 50;
+    }
+    segments.forEach(segment => {
+        ctx.fillRect(segment.start.x, segment.start.y, segment.offset.x, segment.offset.y);
+    })
+    return paddingWidth;
+}
+
+function getAbsoluteCoords(anchor, start, offset) {
+    return { start: Vector2.sum(anchor, start), offset: offset.clone() }
+}
+
+function draw(text, strokeStyle) {
+    clearCanvas();
+    ctx.fillStyle = strokeStyle;
+    const position = new Vector2(10, 0);
+    for (var i = 0; i < text.length; i++) {
+        position.x += drawSymbol(position, text.charAt(i));
+    }
+}
+
+class Stopwatch {
+    constructor(initTime = '00:00:00.0') {
+        initTime = initTime.replace('.', ':');
+        const timeParts = initTime.split(':');
+        const timeLabels = ['ms', 'seconds', 'minutes', 'hours'];
+        timeLabels.forEach(prop => {
+            this[prop] = parseInt(timeParts.pop());
+        });
+    }
+
+    ms;
+    seconds;
+    minutes;
+    hours;
+    lastTime;
+    isRunning = false;
+    strokeStyle = 'red';
+
+    start() {
+        if (!this.isRunning) {
+            this.isRunning = true;
+            this.lastTime = Date.now();
+            this.strokeStyle = 'green';
+            this.updateTimer();
+        }
+    }
+    pause() {
+        if (this.isRunning) {
+            this.isRunning = false;
+            this.strokeStyle = 'red';
+            this.currentPauseTime = Date.now();
+            this.blink(this.currentPauseTime);
+        }
+    }
+    reset() {
+        this.ms = 0;
+        this.seconds = 0;
+        this.minutes = 0;
+        this.hours = 0;
+        this.lastTime = Date.now();
+    }
+    updateTimer() {
+        this.progress();
+        draw(this.toString(), this.strokeStyle);
+        if (this.isRunning) {
+            setTimeout(() => {this.updateTimer();}, 100);
+        }
+    }
+    progress() {
+        const newTime = Date.now();
+        const elapsedTime = newTime - this.lastTime;
+        this.lastTime = newTime;
+
+        this.ms += elapsedTime;
+        if (this.ms >= 1000) {
+            var diff = Math.floor(this.ms / 1000);
+            this.ms %= 1000;
+            this.seconds += diff;
+            if (this.seconds >= 60) {
+                diff = Math.floor(this.seconds / 60);
+                this.seconds %= 60;
+                this.minutes += diff;
+                if (this.minutes >= 60) {
+                    diff = Math.floor(this.minutes / 60);
+                    this.minutes %= 60;
+                    this.hours += diff;
+                }
+            }
+        }
+    }
+    lastBlinkState = 'shown';
+    currentPauseTime;
+    blink(timeStamp) {
+        if (this.currentPauseTime !== timeStamp) return;
+        if (!this.isRunning) {
+            if (this.lastBlinkState === 'shown') {
+                clearCanvas();
+                this.lastBlinkState = 'hidden';
+            } else {
+                draw(this.toString(), this.strokeStyle);
+                this.lastBlinkState = 'shown';
+            }
+            setTimeout(() => {this.blink(timeStamp);}, 1000)
+        } else {
+            this.lastBlinkState = 'hidden';
+        }
+    }
+    toString() {
+        const ds = String(Math.floor(this.ms / 100));
+        const seconds = (this.seconds < 10 ? '0' : '') + String(this.seconds);
+        const minutes = (this.minutes < 10 ? '0' : '') + String(this.minutes);
+        const hours = (this.hours < 10 ? '0' : '') + String(this.hours);
+
+        return '' + hours + ':' + minutes + ':' + seconds + '.' + ds;
+    }
+    save() {
+        localStorage.setItem('timeKeeper:elapsedTime', this.toString() + '00');
+    }
+}
+
+const startTime = localStorage.getItem('timeKeeper:elapsedTime') || '00:00:00.0';
+const stopwatch = new Stopwatch(startTime);
+draw(stopwatch.toString(), stopwatch.strokeStyle);
+
+window.addEventListener('beforeunload', (event) => {
+    stopwatch.save();
+});
+
+const timeKeeperCom = new WindowCommunicator('timeKeeper');
+timeKeeperCom.newTask('toggle', () => {
+    if (stopwatch.isRunning) {
+        stopwatch.pause();
+    } else {
+        stopwatch.start();
+    }
+});
+    </script>
+    <script id="timeKeeper-popup-activator" type="text/plain" stage="trackerStart">
+timeKeeperCom.postMessage('ready');
+    </script>
+    <script id="timeKeeper-communicator" type="text/plain">
+window.addEventListener('trackerStart', () => {
+    shortcutManager.registerBinding('timeKeeper', 'toggle', 'SHIFT P'); // TODO: make this CTRL K + P when sequential shortcuts are implemented
+    shortcutManager.registerBinding('timeKeeper', 'reopen', 'SHIFT T'); // TODO: make this CTRL K + T when sequential shortcuts are implemented
+});
+const timeKeeperCom = new WindowCommunicator('timeKeeper');
+timeKeeperCom.newTask('ready', () => {
+    if (timeKeeperCom.hasRun('ready')) return;
+    window.addEventListener('keydown', (event) => {
+        if (shortcutManager.isLocked) return;
+        const shortcutInfo = shortcutManager.check(event);
+        if (!shortcutInfo) return;
+        switch (shortcutInfo.name) {
+            case 'timeKeeper:toggle':
+                timeKeeperCom.postMessage('toggle');
+                break;
+            case 'timeKeeper:reopen':
+                window.open(window.location.pathname.substring(1) + '?load=sharedModifier+timeKeeper', 'timeKeeperWindow', 'popup,width=405,height=155');
+                break;
+        }
+    });
+});
+window.open(window.location.pathname.substring(1) + '?load=sharedModifier+timeKeeper', 'timeKeeperWindow', 'popup,width=405,height=155');
+    </script>
+    <script id="sharedModifier-communicator" type="text/plain">
+class WindowCommunicator extends BroadcastChannel {
+    constructor(...args) {
+        super(...args);
+        this.onmessage = this.#processTask;
+    }
+
+    prep(...args) {
+        if (args.length % 2 !== 0) throw new Error('Expected property value pairs.');
+        for (var i = 0; i < args.length; i += 2) {
+            const property = args[i];
+            const value = args[i + 1];
+            this[property] = value;
+        }
+    }
+
+    newTask(task, fnHandle) {
+        if (this.handledTasks.hasOwnProperty(task)) throw new Error(`${task} is already a handled task.`);
+        if (this.debug) {
+            const heldHandle = fnHandle;
+            fnHandle = (...args) => {
+                console.log(`Running ${task}`);
+                heldHandle(...args);
+                console.log(`Finished running ${task}`);
+            }
+        }
+        this.handledTasks[task] = fnHandle;
+        this.taskRuns[task] = 0;
+    }
+
+    hasRun(task) {
+        return this.runCount(task) !== 0;
+    }
+
+    runCount(task) {
+        if (this.taskRuns.hasOwnProperty(task)) {
+            return this.taskRuns[task];
+        } else {
+            throw new Error(`${task} is not a handled task.`);
+        }
+    }
+
+    printTasks() {
+        Object.getOwnPropertyNames(this.handledTasks).forEach(elem => {
+            console.log(elem);
+        });
+    }
+
+    #processTask(event) {
+        const args = event.data.split(this.delimiter).map(elem => elem.trim());
+        const task = args.shift();
+        if (this.handledTasks.hasOwnProperty(task)) {
+            this.handledTasks[task](event, ...args);
+            this.taskRuns[task]++;
+        } else {
+            throw new Error(`${task} is not a handled task.`);
+        }
+    }
+
+    handledTasks = {};
+    taskRuns = {};
+    delimiter = '<<';
+    debug = false;
+}
+    </script>
+    <script id="annotator-style" type="text/plain" content="css"
+        replaces="PANEL_COLOR=panelColor; COLLAPSE_BUTTON_STYLE=collapseButtonStyle; TEXTBOX_STYLE=textboxStyle">
+/* collapsible */
+.collapsible-panel {
+    transition: height 250ms ease-in-out;
+    position: fixed;
+    width: 100%;
+    height: 300px;
+    top: 0;
+}
+
+.collapsible-panel-collapsed {
+    height: 0px;
+}
+
+.collapsible-panel-content {
+    height: 100%;
+    background-color: ${PANEL_COLOR};
+    overflow: scroll;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+    * {
+        pointer-events: auto;
+    }
+    button:focus {
+        border: 1px solid red;
+    }
+}
+
+.collapsible-panel-control {
+    transition: top 250ms ease-in-out;
+    position: fixed;
+    top: 0;
+    left: 10%;
+    height: 20px;
+    ${COLLAPSE_BUTTON_STYLE};
+}
+
+.collapsible-panel-control-expanded {
+    top: 300px !important;
+}
+
+/* annotator */
+#annotator-text-control {
+    width: 400px;
+    ${TEXTBOX_STYLE};
+}
+
+#annotator-badge-container {
+    width: 100%;
+    height: 40px;
+}
+
+#annotator-notes-table {
+    td:nth-child(even) {
+        border: 1px solid black;
+        border-radius: 5px;
+        width: 150px;
+        background-color: #5f2;
+        color: black;
+    };
+    td:nth-child(odd) {
+        width: 25px;
+        color: white;
+    }
+    td {
+        text-align: center;
+    }
+}
+
+.annotator-notes-badge {
+    float: left;
+    padding: 0px 10px;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: #5f2;
+    color: black;
+}
+
+.autocomplete-options {
+    position: fixed;
+    float: none;
+}
+    </script>
+    <script id="annotator-content" type="text/plain" content="html">
+<div class="collapsible-panel collapsible-panel-collapsed">
+    <div class="collapsible-panel-content">
+        <div id="annotator-badge-container"></div>
+        <input id="annotator-text-control" type="text">
+        <button id="annotator-submit">Add</button>
+        <table id="annotator-notes-table"></table>
+    </div>
+    <button id="annotator-visibility-control" class="collapsible-panel-control">Notes</button>
+</div>
+    </script>
+    <script id="annotator-autocomplete" type="text/plain">
+class AutoCompleteTextBox {
+    constructor(
+        textControl,
+        sortingAlgorithmHandle,
+        textChangeHandle,
+        selectChangeHandle,
+        replaceHandle
+    ) {
+        if (!(textControl && textControl.nodeType === Node.ELEMENT_NODE)) {
+            throw new Error("Input 1 was not a valid NodeElement");
+        }
+        this.#textControl = textControl;
+        this.#textControl.value = "";
+        switch (sortingAlgorithmHandle && sortingAlgorithmHandle.constructor.name) {
+            case "Function":
+                this.#sortingAlgorithmHandle = sortingAlgorithmHandle;
+                break;
+            case "String":
+                switch (sortingAlgorithmHandle.toLowerCase()) {
+                    case "ascend":
+                        this.#sortingAlgorithmHandle = (a, b) => {
+                            if (a < b) return -1;
+                            if (a > b) return 1;
+                            return 0;
+                        };
+                        break;
+                    case "descend":
+                        this.#sortingAlgorithmHandle = (a, b) => {
+                            if (a < b) return 1;
+                            if (a > b) return -1;
+                            return 0;
+                        };
+                        break;
+                }
+                break;
+        }
+        switch (textChangeHandle && textChangeHandle.constructor.name) {
+            case "Function":
+                this.#textChangeHandle = textChangeHandle;
+                break;
+            case "String":
+                switch (textChangeHandle.toLowerCase()) {
+                    default:
+                        // uses #defaultTextChangeHandle
+                }
+                break;
+        }
+        // for tabs
+        this.#textControl.addEventListener("keydown", (event) =>
+            this.#defaultTextChangeHandle(event)
+        );
+        // for regular presses
+        this.#textControl.addEventListener("keyup", (event) =>
+            this.#defaultTextChangeHandle(event)
+        );
+        switch (selectChangeHandle && selectChangeHandle.constructor.name) {
+            case "Function":
+                this.#selectChangeHandle = selectChangeHandle;
+                break;
+            case "String":
+                switch (selectChangeHandle.toLowerCase()) {
+                    default:
+                        // uses #defaultSelectChangeHandle
+                }
+                break;
+        }
+        switch (replaceHandle && replaceHandle.constructor.name) {
+            case "Function":
+                this.#replaceHandle = replaceHandle;
+                break;
+            case "String":
+                switch (replaceHandle.toLowerCase()) {
+                    default:
+                        // uses #defaultReplaceHandle
+                }
+                break;
+        }
+        this.#generateSelectControl();
+        this.#textControl.addEventListener("focusout", (event) => {
+            setTimeout(() => {
+                if (
+                    this.#hideOnFocusLost &&
+                    document.activeElement !== this.#selectControl
+                ) {
+                    this.#selectControl.style.display = "none";
+                }
+            }, 100);
+        });
+        this.#textControl.addEventListener("focusin", (event) => {
+            if (this.#hideOnFocusLost && this.options.length) {
+                this.#selectControl.style.display = "";
+            }
+        });
+    }
+    static cleanUpText(val) {
+        return val.replace(/\W/g, "").toLowerCase();
+    }
+    #defaultTextChangeHandle(event) {
+        var targetValue;
+        if (
+            event.key === "Enter" &&
+            event.type === "keyup" &&
+            this.selectFirstOnEnter &&
+            this.#options.length
+        ) {
+            this.#selectControl.focus();
+            this.#selectControl.querySelector("option").selected = true;
+            const changeEvent = new Event("change");
+            this.#selectControl.dispatchEvent(changeEvent);
+            return;
+        } else if (event.key === "Tab" && this.#options.length) {
+            event.preventDefault();
+            if (event.type === "keydown") {
+                this.#selectControl.setAttribute("data-changelocked", "true");
+                Array.from(this.#selectControl.querySelectorAll("option:checked"))
+                    .forEach(elem => elem.selected = false);
+                this.#selectControl.focus();
+                this.#selectControl.querySelector("option").selected = true;
+            }
+            return;
+        }
+        if (this.#textChangeHandle !== this.#defaultTextChangeHandle) {
+            targetValue = this.#textChangeHandle(event);
+        } else {
+            targetValue = AutoCompleteTextBox.cleanUpText(event.target.value);
+            if (targetValue) {
+                if (
+                    this.#options.length ||
+                    targetValue.length === 1 ||
+                    targetValue.length < this.#lastKnownLength
+                ) {
+                    if (this.#knownList.length) {
+                        this.options = this.#knownList
+                            .filter((val) => val.includes(targetValue))
+                            .sort((a, b) => this.#sortingAlgorithmHandle(a, b, targetValue));
+                    }
+                }
+            } else {
+                this.options = [];
+            }
+        }
+        this.#lastKnownLength = targetValue.length;
+    }
+    #defaultSelectChangeHandle(event) {
+        if (!event.target.querySelector("option:checked"))
+            this.#selectControl.setAttribute("data-changelocked", "true");
+        if (this.#selectControl.getAttribute("data-changelocked") === "true") {
+            return;
+        }
+        var heldValue;
+        if (this.#selectChangeHandle !== this.#defaultSelectChangeHandle) {
+            heldValue = this.#selectChangeHandle(event);
+        } else {
+            heldValue = event.target.querySelector("option:checked").value;
+            this.options = [];
+        }
+        this.#textControl.focus();
+        this.#lastKnownLength = heldValue.length;
+        this.#defaultReplaceHandle(heldValue, this.#textControl);
+    }
+    #defaultReplaceHandle(value, textControl) {
+        if (this.#replaceHandle !== this.#defaultReplaceHandle) {
+            this.#replaceHandle(value, textControl);
+        } else {
+            textControl.value = value;
+            textControl.focus();
+        }
+    }
+    #defaultSortingAlgorithm(a, b, value) {
+        const aInd = a.search(value);
+        const bInd = b.search(value);
+        if (aInd < bInd) {
+            return -1;
+        } else if (aInd > bInd) {
+            return 1;
+        }
+        return 0;
+    }
+    #generateSelectControl() {
+        const selectControl = document.createElement("select");
+        selectControl.id = this.#textControl.id + "-autocomplete-options";
+        selectControl.className = "autocomplete-control autocomplete-options";
+        selectControl.multiple = true;
+        selectControl.style.display = "none";
+        selectControl.addEventListener("change", (event) =>
+            this.#defaultSelectChangeHandle(event)
+        );
+        selectControl.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.target.setAttribute("data-changelocked", "false");
+                const changeEvent = new Event("change");
+                event.target.dispatchEvent(changeEvent);
+            }
+        });
+        selectControl.addEventListener("click", (event) => {
+            event.target.closest("select").setAttribute("data-changelocked", "false");
+            const changeEvent = new Event("change");
+            event.target.closest("select").dispatchEvent(changeEvent);
+        });
+        selectControl.addEventListener("focusout", (event) => {
+            event.target.closest("select").setAttribute("data-changelocked", "false");
+            setTimeout(() => {
+                if (this.#hideOnFocusLost && document.activeElement !== this.#textControl)
+                    selectControl.style.display = "none";
+            }, 100);
+        });
+        document.body.appendChild(selectControl);
+        const textPosition = this.#textControl.getBoundingClientRect();
+        Object.getOwnPropertyNames(textPosition).forEach(
+            (prop) => (textPosition[prop] = Math.round(textPosition[prop]))
+        );
+        selectControl.style.height = "100px";
+        selectControl.style.width = textPosition.width + "px";
+        selectControl.style.top = textPosition.top + textPosition.height + "px";
+        selectControl.style.left = textPosition.left + "px";
+        this.#selectControl = selectControl;
+    }
+    get textControl() {
+        return this.#textControl;
+    }
+    get selectControl() {
+        return this.#selectControl;
+    }
+    get selectFirstOnEnter() {
+        return this.#selectFirstOnEnter;
+    }
+    set selectFirstOnEnter(val) {
+        this.#selectFirstOnEnter = !!val;
+    }
+    get knownList() {
+        return this.#knownList;
+    }
+    set knownList(arr) {
+        this.#knownList = [];
+        if (arr && Array.isArray(arr) && arr.length) {
+            this.#knownList = arr
+                .map((elem) => AutoCompleteTextBox.cleanUpText(elem))
+                .sort();
+        }
+    }
+    get options() {
+        return this.#options;
+    }
+    set options(arr) {
+        this.#options = [];
+        if (arr && Array.isArray(arr) && arr.length) {
+            this.#options = arr;
+        }
+        Array.from(this.#selectControl.childNodes).forEach((node) => node.remove());
+        this.#options.forEach((val) => {
+            const option = document.createElement("option");
+            option.appendChild(document.createTextNode(val));
+            this.#selectControl.appendChild(option);
+        });
+        this.#selectControl.style.display = this.#options.length ? "" : "none";
+    }
+    get hideOnFocusLost() {
+        return this.#hideOnFocusLost;
+    }
+    set hideOnFocusLost(val) {
+        this.#hideOnFocusLost = !!val;
+    }
+    #selectFirstOnEnter = true;
+    #textControl;
+    #lastKnownLength = 0;
+    #selectControl;
+    #knownList = [];
+    #options = [];
+    #textChangeHandle = this.#defaultTextChangeHandle;
+    #selectChangeHandle = this.#defaultSelectChangeHandle;
+    #replaceHandle = this.#defaultReplaceHandle;
+    #sortingAlgorithmHandle = this.#defaultSortingAlgorithm;
+    #hideOnFocusLost = true;
+}
+    </script>
+    <script id="annotator-globals" type="text/plain">
+function discoverAutoCompleteList() {
+    return [... new Set(Array.from(document.querySelectorAll("#item-locations tr[data-id] td:first-child")).map(elem => elem.innerText)
+        .filter(innerText => !innerText.includes("Notebook:"))
+        .concat(
+            ["Junk", "Trap", "Green Rupee", "Blue Rupee", "Red Rupee", 
+            "Crimson Rupee", "Purple Rupee", "Silver Rupee", "Gold Rupee",
+            "10 Arrows", "30 Arrows", "50 Arrows", "5 Bombs", "10 Bombs",
+            "Bombchu", "5 Bombchus", "10 Bombchus", "Notebook Entry",
+            "Deku Stick", "Deku Nut", "has", "costs"],
+            Array.from(document.querySelectorAll("#item-replacements .region td[colspan='3']")).map(elem => elem.innerText),
+            Array.from(document.querySelectorAll("#item-replacements tr[data-id] td:first-child")).map(elem => elem.innerText),
+            Array.from(document.querySelectorAll("#randomized-prices td:first-child")).map(elem => elem.innerText),
+            Array.from(document.querySelectorAll("#randomized-prices span[data-content]")).map(elem => elem.getAttribute("data-content"))
+        ))];
+}
+
+function findMatchingEntry(region, check) {
+    const matches = Array.from(document.querySelectorAll('#item-replacements td.newlocation'))
+        .filter(elem => {
+            const innerText = AutoCompleteTextBox.cleanUpText(elem.innerText);
+            return innerText === check;
+        });
+    if (region.length === 0) return matches.shift();
+    while (matches.length) {
+        const match = matches.shift();
+        var parent = match.parentNode;
+        while (parent.previousSibling && !parent.classList.contains("region")) parent = parent.previousElementSibling;
+        if (AutoCompleteTextBox.cleanUpText(parent.querySelector("td").innerText) === region) {
+            return match;
+        }
+    }
+    return matches.shift();
+}
+
+function createAnnotationBadge(value) {
+    const badge = document.createElement("div");
+    badge.className = "annotator-notes-badge";
+    badge.setAttribute("data-badgeId", annotatorBadgeIndex++);
+    badge.draggable = "true";
+    badge.appendChild(document.createTextNode(value));
+    badge.addEventListener("click", () => {
+        badge.remove();
+        annotatorTextControl.focus();
+    });
+    badge.addEventListener("dragenter", (event) => {
+        event.target.classList.add("dragover");
+    });
+    badge.addEventListener("dragleave", (event) => {
+        try {
+            if (event.target.classList.contains("dragover"))
+                event.target.classList.remove("dragover");
+        } catch {
+            // do nothing because it was released
+        }
+    });
+
+    badge.addEventListener("dragend", (event) => {
+        const targetBadge = badgeContainer.querySelector(".annotator-notes-badge.dragover");
+        if (!targetBadge) return;
+        targetBadge.classList.remove("dragover");
+        if (targetBadge === event.target) return;
+        const beforeTest = badgeContainer.querySelector(
+            `.notes-badge[data-badgeId="${event.target.getAttribute(
+                "data-badgeId"
+            )}"] ~ .notes-badge[data-badgeId="${targetBadge.getAttribute(
+                "data-badgeId"
+            )}"]`
+        );
+        if (beforeTest) {
+            event.target.parentNode.insertBefore(
+                event.target,
+                targetBadge.nextSibling
+            );
+        } else {
+            event.target.parentNode.insertBefore(event.target, targetBadge);
+        }
+    });
+    badgeContainer.appendChild(badge);
+}
+function createRow(badges) {
+    annotatorBadgeIndex = 0;
+    const hasSpacerInstance = badges.find(elem => elem.innerText === "has");
+    const costsSpacerInstance = badges.find(elem => elem.innerText === "costs");
+    var spacers = ["-", "has"];
+    if (hasSpacerInstance && costsSpacerInstance) {
+        console.log('Cannot use both "has" and "cost" in a note entry.');
+    } else if (hasSpacerInstance) {
+        const hasSpacerIndex = badges.indexOf(hasSpacerInstance);
+        hasSpacerInstance.remove();
+        badges.splice(hasSpacerIndex, 1);
+        switch(hasSpacerIndex) {
+            case 1:
+                badges.unshift({ innerText: "", remove: () => {} });
+                break;
+            case 2:
+                break;
+            default:
+                console.log('The "has" token is in the wrong spot. 1st or 2nd index only.');
+                return; // error
+        }
+    } else if (costsSpacerInstance) {
+        const costsSpacerIndex = badges.indexOf(costsSpacerInstance);
+        costsSpacerInstance.remove();
+        badges.splice(costsSpacerIndex, 1);
+        spacers.pop(); spacers.push("costs");
+        switch(costsSpacerIndex) {
+            case 1:
+                badges.unshift({ innerText: "", remove: () => {} });
+                break;
+            case 2:
+                break;
+            default:
+                console.log('The "costs" token is in the wrong spot. 1st or 2nd index only.');
+                return; // error
+        }
+    } else {
+        console.log('Must use either "has" or "costs" spacer.');
+        return;
+    }
+    const tr = document.createElement("tr");
+    while (badges.length < 6) {
+        badges.push({ innerText: "", remove: () => {} });
+    }
+
+    const goToEntryButton = document.createElement("button");
+    const entryDestination = findMatchingEntry(badges[0].innerText, badges[1].innerText);
+    goToEntryButton.addEventListener("click", (event) => {
+        event.stopImmediatePropagation();
+        if (entryDestination) {
+            document.getElementById("annotator-visibility-control").click();
+            entryDestination.scrollIntoView({block: "center"});
+            entryDestination.focus();
+            const heldDestinationTdStyleBorder = entryDestination.style.border;
+            entryDestination.style.border = "3px solid red";
+            setTimeout(() => entryDestination.style.border = heldDestinationTdStyleBorder, 800);
+        }
+    });
+    goToEntryButton.innerText = ">";
+    const entryButtonTd = document.createElement("td");
+    entryButtonTd.appendChild(goToEntryButton);
+    tr.appendChild(entryButtonTd);
+
+    var spacerBadge;
+    badges.forEach((badge) => {
+        if (spacerBadge) tr.appendChild(spacerBadge);
+        const td = document.createElement("td");
+        td.innerText = badge.innerText;
+        tr.appendChild(td);
+        badge.remove();
+        spacerBadge = document.createElement("td");
+        spacerBadge.innerText = spacers.shift() || ",";
+    });
+    tr.addEventListener("click", () => {
+        const badges = Array.from(tr.childNodes);
+        badges.shift();
+        while (badges.length) {
+            const currentText = badges.shift().innerText;
+            if (currentText.length) createAnnotationBadge(currentText);
+            if (badges.length === 8) createAnnotationBadge(badges[0].innerText);
+            badges.shift();
+        }
+        tr.remove();
+        annotatorTextControl.focus();
+        saveAnnotatorNotes();
+    });
+    document.getElementById("annotator-notes-table").appendChild(tr);
+}
+
+function saveAnnotatorNotes() {
+    var fullSaveString = "";
+    const entries = Array.from(annotatorNotesTable.querySelectorAll("tr"));
+    entries.forEach(entry => {
+        const tokens = Array.from(entry.querySelectorAll("td"))
+            .map(elem => elem.innerText)
+            .filter(innerText => ![">", "-", ","].includes(innerText));
+        fullSaveString += ";" + tokens.join(",");
+    });
+    localStorage.setItem("annotatorNotes", fullSaveString.slice(1));
+}
+
+var annotatorBadgeIndex = 0;
+const badgeContainer = document.getElementById("annotator-badge-container");
+const annotatorTextControl = document.getElementById("annotator-text-control");
+const annotatorSubmitButton = document.getElementById("annotator-submit");
+annotatorSubmitButton.addEventListener("click", () => {
+    createRow(Array.from(badgeContainer.childNodes));
+    saveAnnotatorNotes();
+});
+const annotatorNotesTable = document.getElementById("annotator-notes-table");
+    </script>
+    <script id="annotator-script" type="text/plain" stage="trackerStart">
+annotatorTextControl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.shiftKey || event.ctrlKey)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (annotatorTextControl.value.length) {
+            const fauxKeyup = new Event("keyup");
+            fauxKeyup.key = "Enter";
+            fauxKeyup.target = annotatorTextControl;
+            annotatorTextControl.dispatchEvent(fauxKeyup);
+        }
+        annotatorTextControl.value = "";
+        createRow(Array.from(badgeContainer.childNodes));
+        saveAnnotatorNotes();
+    } else if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        annotatorTextControl.value = "";
+        Array.from(badgeContainer.querySelectorAll(".annotator-notes-badge")).forEach(
+            (elem) => elem.remove()
+        );
+        annotatorBadgeIndex = 0;
+    }
+});
+const collapsiblePanels = Array.from(
+    document.querySelectorAll(".collapsible-panel")
+);
+collapsiblePanels.forEach((panel) => {
+    const control = panel.querySelector(".collapsible-panel-control");
+    var heldKey;
+    control.addEventListener("click", () => {
+        control.parentNode.classList.toggle("collapsible-panel-collapsed");
+        control.classList.toggle("collapsible-panel-control-expanded");
+        if (control.classList.contains("collapsible-panel-control-expanded")) {
+            annotatorTextControl.focus();
+            setTimeout(() => badgeContainer.scrollIntoView(), 10);
+            control.innerText = "Collapse";
+            heldKey = shortcutManager.addConditionalLock("annotator", "typing");
+        } else {
+            annotatorTextControl.blur();
+            control.innerText = "Notes";
+            shortcutManager.removeConditionalLock(heldKey);
+        }
+    });
+});
+(new AutoCompleteTextBox(
+    annotatorTextControl, null, null, null,
+    (value, control) => {
+        control.value = "";
+        createAnnotationBadge(value);
+    }
+)).knownList = discoverAutoCompleteList();
+
+if (localStorage.getItem("annotatorNotes") !== null) {
+    const lines = localStorage.getItem("annotatorNotes").split(";");
+    lines.forEach(line => {
+        const tokens = line.split(",");
+        createRow(tokens.map(elem => ({innerText: elem, remove: () => {}})));
+    });
+}
+    </script>
+    <script id="annotator-shortcuts" type="text/plain">
+window.addEventListener('trackerStart', () => {
+    shortcutManager.registerBinding('annotator', 'toggle', 'shift n');
+})
+window.addEventListener('keydown', (event) => {
+    if (shortcutManager.isLocked) return;
+
+    shortcutManager.runOnMatch(event, 'annotator:toggle',
+        () => {
+            document.getElementById('annotator-visibility-control').click();
+            event.preventDefault();
+        }
+    )
+})
+    </script>
+    <script id="checkFilterer-style" type="text/plain" content="css">
+tr[data-hideable="true"]:has(input:checked) {
+    display: none;
+}
+/* vvvv    From Isghj's Actorizer Test 88.3    vvvv */
+.settingsFlex {
+    display: flex;
+    flex-direction: row;
+}
+.settingsFlex span {
+    width: 100%;
+    text-align: center;
+    padding: 3px 0px;
+}
+#hideItemLabel {
+    text-align: left;
+    display: inline;
+    width: auto;
+}
+@media (max-width: 860px) {
+    .settingsFlex {
+        flex-direction: column;
+    }
+    #hideItemLabel {
+        text-align: center;
+        display: inline-block;
+        width: 100%;
+    }
+}
+/* ^^^^    From Isghj's Actorizer Test 88.3    ^^^^ */
+    </script>
+    <script id="checkFilterer-globals" type="text/plain">
+function updateItemDisplaySettings(event) {
+    const category = event.target.getAttribute("data-target");
+    const state = event.target.checked;
+    Array.from(document.querySelectorAll(`#item-replacements tr[data-hideableType="${category}"]`)).forEach(elem => {
+        elem.setAttribute("data-hideable", state.toString());
+    });
+    /* make sure this works
+    if (!state) {
+        Array.from(document.querySelectorAll(`#item-replacements tr[data-hideable="true"][data-hideableType="${category}"]`)).forEach(elem => {
+            elem.setAttribute("data-hideable", "false");
+        });
+    } else {
+        Array.from(document.querySelectorAll(`#item-replacements tr[data-hideable="false"][data-hideableType="${category}"]`)).forEach(elem => {
+            elem.setAttribute("data-hideable", "true");
+        });
+    }
+    */
+}
+    </script>
+    <script id="checkFilterer-script" type="text/plain" stage="trackerStart">
+Array.from(document.querySelectorAll(".settingsFlex input")).forEach(elem => {
+    elem.addEventListener("click", updateItemDisplaySettings);
+});
+const hideableCategories = Object.getOwnPropertyNames(removableSettings);
+hideableCategories.forEach(category => {
+    const entryTargets = Array.from(document.querySelectorAll("#item-replacements .itemname span"));
+    entryTargets.forEach(target => {
+        const tr = target.parentNode.parentNode;
+        for (var i = 0; i < hideableCategories.length; i++) {
+            const category = hideableCategories[i];
+            const hideableMatches = removableSettings[category];
+            for (var j = 0; j < hideableMatches.length; j++) {
+                if (target.getAttribute("data-content").match(hideableMatches[j])) {
+                    tr.setAttribute("data-hideableType", category);
+                    break;
+                }
+            }
+            if (tr.getAttribute("data-hideableType")) {
+                tr.setAttribute("data-hideable", "false");
+                break;
+            }
+        }
+    });
+});
+    </script>
+    <script src="js/tabManager.js"></script>
+    <script src="js/addOn.js"></script>
+    <script src="js/classes.js"></script>
+    <script src="js/functions.js"></script>
+    <script src="js/index.js"></script>
+</body>
+
+</html>
