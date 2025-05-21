@@ -580,7 +580,181 @@ The required form is `"[add-on key]/[snippet key]"`.
 
 ### In MMRTM
 
-I have not written this yet, but the information in the userscript example might also be helpful. Documentation is a work in progress.
+We'll be writing a simple add-on that cycles the color of the Item Replacements table heading. This isn't terribly useful, but will cover some of the things that the modifier can do.
+
+To write an add-on entirely on your system, we'll be creating one file and modifying one more. First, create a file in `./js` named `headingColorizer.js`:
+
+```
+/css
+/docs
+/img
+/js
+    addOn.js
+    classes.js
+    functions.js
+    index.js
+    tabManager.js
+    headingColorizer.js <-- create this file
+MMRTM.html
+README.md
+```
+
+In `headingColorizer.js`, we'll start by defining the add-on. We'll be setting the `key`, `name`, `description`, `promisedSnippets`, and `settings` properties.
+
+**In: ./js/headingColorizer.js**
+
+```js
+class HeadingColorizer extends AddOn {
+  key = "headingColorizer";
+  name = "Heading Colorizer";
+  description = "Cycles the color of the Item Replacements table heading.";
+  promisedSnippets = ["script", "shortcuts"];
+  settings = {
+    enableShortcuts: false,
+    styleColors: "['#111','#444','#777','#aaa','#ddd','#f00','#0f0','#00f']",
+  };
+}
+```
+
+In `MMRTM.html`, we're going to add three script tags. Two of them will be snippets for this add-on, and the third will be referencing this new file. Starting at the bottom of the file, after the `index.js` script tag, we'll add a reference to our script.
+
+**In: ./MMRTM.html**
+
+```html
+<!-- ... -->
+    <script src="js/tabManager.js"></script>
+    <script src="js/addOn.js"></script>
+    <script src="js/classes.js"></script>
+    <script src="js/functions.js"></script>
+    <script src="js/index.js"></script>
+    <script src="js/headingColorizer.js"></script> <!-- your script tag -->
+</body>
+<!-- ... -->
+```
+
+Before the `tabManager.js` script tag, we'll add the two snippet tags:
+
+**In: ./MMRTM.html**
+
+```html
+<!-- ... -->
+<script
+  id="headingColorizer-script"
+  type="text/plain"
+  replaces="STYLE_COLORS=styleColors"
+></script>
+<script id="headingColorizer-shortcuts" type="text/plain"></script>
+<script src="js/tabManager.js"></script>
+<!-- ... -->
+```
+
+These will hold content and attributes about our snippets. Please note the `id` and `replaces` attributes. These need to be written as seen above.
+
+Starting with the `headingColorizer-script` element, we'll write the logic that handles the color toggling.
+
+**In: ./MMRTM.html#headingColorizer-script**
+
+```js
+const headingColors = ${STYLE_COLORS}; // no, this is not a typo.
+const targetHeading = document.getElementById("item-replacements-heading");
+
+targetHeading.addEventListener("click", (event) => {
+    const newColor = headingColors.shift();
+    event.target.style.color = newColor;
+    headingColors.push(newColor);
+});
+```
+
+Now, to handle shortcuts, we'll write into the `headingColorizer-shortcuts` element.
+
+**In: ./MMRTM.html#headingColorizer-shortcuts**
+
+```js
+// Register shortcuts.
+window.addEventListener("trackerStart", () => {
+  shortcutManager.registerBinding("headingColorizer", "cycle", "shift y");
+});
+// Add a listener to eventually evoke the shortcut.
+window.addEventListener("keydown", (event) => {
+  if (shortcutManager.isLocked) return;
+
+  shortcutManager.runOnMatch(event, "headingColorizer:cycle", () =>
+    targetHeading.click()
+  );
+});
+```
+
+Next, we need to tie these snippets to the add-on. Back in your JavaScript file, we'll write the `bake()` method.
+
+**In: ./js/headingColorizer.js**
+
+```js
+class HeadingColorizer extends AddOn {
+  /* ... */
+  bake() {
+    this.newSnippet(
+      "script",
+      document.getElementById("headingColorizer-script")
+    );
+    this.newOptionalSnippet(
+      "shortcuts",
+      document.getElementById("headingColorizer-shortcuts"),
+      "text/html",
+      this.settings.enableShortcuts.toString().toLowerCase() === "true",
+      "Having shortcuts enabled on HeadingColorizer adds the following:\n" +
+        "[SHIFT + Y] => cycle Item Replacements heading color"
+    );
+  }
+}
+```
+
+This will always create the `headingColorizer/script` snippet, and creates a `headingColorizer/shortcuts` snippet when `settings.enableShortcuts` is `true`.
+
+Next, we need the tracker to have identified headers to make this all work. We will utilize `sharedModifier.oneOffExecute()` in our add-on's `preWrite()` method:
+
+**In: ./js/headingColorizer.js**
+
+```js
+class HeadingColorizer extends AddOn {
+  /* ... */
+  bake() {
+    /* ... */
+  }
+  preWrite() {
+    this.getAddOn("sharedModifier").oneOffExecute("identifyHeaders");
+  }
+}
+```
+
+Finally, to get the modifier to acknowledge this add-on, we need to end the file with the line:
+
+**In: ./js/headingColorizer.js**
+
+```js
+class HeadingColorizer extends AddOn {
+  /* ... */
+}
+aog.know(HeadingColorizer);
+```
+
+That's it. If you load MMRTM.html, you should see `Heading Colorizer` as an available add-on. Add it to your active add-on's, set `enableShortcuts` to `true`, and build the modified tracker. You should be able to click the heading to change it's color, or use the shortcut `SHIFT + Y`. If something isn't working, please check the [example class file](docs/headingColorizer-class.js) and [HTML snippet](docs/headingColorizer.html) in full to compare. The final environment structure should be:
+
+```
+/css
+/docs
+/img
+/js
+    addOn.js
+    classes.js
+    functions.js
+    headingColorizer.js
+    index.js
+    tabManager.js
+MMRTM.html
+README.md
+```
+
+If you didn't like modifying the files directly, maybe userscripts are for you.
 
 ### In Userscripts
 
@@ -755,6 +929,6 @@ outstandingAddOns--;
 /* eslint-enable */
 ```
 
-Now, if you enable the userscript and load MMRTM.html, you should see `Heading Colorizer` as an available add-on. Add it to your active add-on's, set `enableShortcuts` to true, and build the modified tracker. You should be able to click the heading to change it's color, or use the shortcut `SHIFT + Y`. If something isn't working, please check the [example userscript](HeadingColorizer.js) in full to compare.
+Now, if you enable the userscript and load MMRTM.html, you should see `Heading Colorizer` as an available add-on. Add it to your active add-on's, set `enableShortcuts` to true, and build the modified tracker. You should be able to click the heading to change it's color, or use the shortcut `SHIFT + Y`. If something isn't working, please check the [example userscript](headingColorizer-userscript.js) in full to compare.
 
 **Note: While you have userscripts enabled for the page, this will be treated like any other add-on. If you disable userscripts for the page, you will temporarily lose access to the add-on. Any changes to settings will be still be there for when userscripts are re-enabled, though.**

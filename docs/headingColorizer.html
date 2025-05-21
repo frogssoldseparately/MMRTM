@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <!-- ... -->
+    <script id="headingColorizer-script" type="text/plain" replaces="STYLE_COLORS=styleColors">
+const headingColors = ${STYLE_COLORS};
+const targetHeading = document.getElementById("item-replacements-heading");
+
+targetHeading.addEventListener("click", (event) => {
+    const newColor = headingColors.shift();
+    event.target.style.color = newColor;
+    headingColors.push(newColor);
+});
+    </script>
+    <script id="headingColorizer-shortcuts" type="text/plain">
+// Register shortcuts.
+window.addEventListener("trackerStart", () => {
+    shortcutManager.registerBinding("headingColorizer", "cycle", "shift y");
+});
+// Add a listener to eventually evoke the shortcut.
+window.addEventListener("keydown", (event) => {
+    if (shortcutManager.isLocked) return;
+
+    shortcutManager.runOnMatch(event, "headingColorizer:cycle",
+        () => targetHeading.click()
+    );
+});
+    </script>
+    <script src="js/tabManager.js"></script>
+    <script src="js/addOn.js"></script>
+    <script src="js/classes.js"></script>
+    <script src="js/functions.js"></script>
+    <script src="js/index.js"></script>
+    <script src="js/headingColorizer.js"></script>
+</body>
+
+</html>

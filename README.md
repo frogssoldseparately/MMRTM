@@ -17,6 +17,7 @@ The main goal of this project was to make a couple of changes I wanted to see be
   - [Add-on Selector](#add-on-selector)
   - [Settings Editor](#settings-editor)
   - [Query Parameters](#query-parameters)
+- [Planned Features](#planned-features)
 - [Built-in Add-on's](#built-in-add-ons)
   - [Tracker](#tracker)
   - [Shared Modifier](#shared-modifier)
@@ -112,6 +113,8 @@ Ex: `path/to/the/modifier/MMRTM.html?silent`
 Ex: `127.0.0.1:80/MMRTM.html?load=mapNavigator+sharedModifier`
 
 To get the most utility possible out of this, having a bookmark for both the original file for when you do have to make changes (swap trackers, settings, etc.) - `path/to/the/modifier/MMRTM.html` - and one that is autobuilt and silent for when you are returning to the same tracker - `path/to/the/modifier/MMRTM.html?autobuild&silent` - could be useful. The latter gets you right into randomizer.
+
+## Planned Features
 
 ## Built-in Add-on's
 

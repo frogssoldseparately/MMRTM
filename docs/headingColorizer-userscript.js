@@ -82,7 +82,7 @@
 
   document.body.appendChild(scriptElement);
 
-  // create <script id="headingColorizer-script" type="text/plain">
+  // create <script id="headingColorizer-shortcuts" type="text/plain">
   const shortcutsElement = document.createElement("script");
   shortcutsElement.id = "headingColorizer-shortcuts";
   shortcutsElement.type = "text/plain";
