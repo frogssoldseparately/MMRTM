@@ -49,7 +49,8 @@ class AddOnGenerator {
   }
 }
 
-/** A container and controller for a select element holding add-on entries. This facilitates moving elements back
+/**
+ * A container and controller for a select element holding add-on entries. This facilitates moving elements back
  * and forth between two select elements.
  */
 class SelectionContainer {
@@ -1057,7 +1058,7 @@ class MapNavigator extends AddOn {
     enableShortcuts: false,
     enablePopupMode: false,
     hideClearedLocations: true,
-    revertStyleInActorizer: true,
+    revertStyleInActorizer: false,
     navButtons: [
       {
         id: "map-visibility-button",

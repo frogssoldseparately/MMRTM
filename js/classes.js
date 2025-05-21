@@ -1,4 +1,4 @@
-/** The handler for all modifications to the tracker */
+/** The handler for all modifications to the tracker. */
 class Modifier {
   /**
    * Create a Modifier utilizing some set of add-on's and guidance on how to inject

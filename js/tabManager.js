@@ -126,14 +126,10 @@ class TabManager {
     );
     // generate objects storing references to each navigable tab
     this.keyAttributeNames.forEach((keyAttribute) => {
-      // this.tabBindings[keyAttribute] = {};
       const tabs = document.querySelectorAll(`.tab[${keyAttribute}]`);
       tabs.forEach((tab) => {
         const key = tab.getAttribute(keyAttribute);
         const container = tab.closest(".tab-container");
-        // if (!this.tabBindings[keyAttribute].hasOwnProperty(container.id)) {
-        //   this.tabBindings[keyAttribute][container.id] = {};
-        // }
         const content = container.querySelector(
           `.tab-content[${keyAttribute}="${key}"]`
         );
@@ -144,12 +140,7 @@ class TabManager {
           content,
           keyAttribute
         );
-        // this.tabBindings[keyAttribute][container.id][key] = currentBinding;
         this.unorderedBindings.push(currentBinding);
-        // tab.addEventListener("click", () => {
-        //   this.activeTab[container.id].hide();
-        //   currentBinding.show();
-        // });
         this.attemptDefaultOpen(currentBinding);
       });
     });
@@ -165,10 +156,6 @@ class TabManager {
     const container = tab.closest(".tab-container");
     const binding = new TabBinding(this, container, tab, content, keyAttribute);
     this.unorderedBindings.push(binding);
-    // tab.addEventListener("click", () => {
-    //   this.activeTab[container.id].hide();
-    //   binding.show();
-    // });
     this.attemptDefaultOpen(binding);
     binding.discover();
     binding.nextBinding.discover();
@@ -205,24 +192,12 @@ class TabManager {
   }
   attemptDefaultOpen(binding) {
     if (binding.tab.hasAttribute("default-tab")) {
-      // the tab click event hides the current tab, so if there is no current tab
-      // use the binding to show the tab instead
-      // if (this.activeTab[binding.container.id] != null) {
-      //   binding.tab.click();
-      // } else {
-      //   binding.show();
-      // }
       binding.tab.click();
     }
   }
   getBinding(prop, value) {
     return this.unorderedBindings.find((binding) => binding[prop] === value);
   }
-  // getTabFromContent(content) {
-  //   console.log("I am being used");
-  //   const targetBinding = this.getBinding("content", content);
-  //   return targetBinding.tab;
-  // }
   activeTab = {};
   keyAttributeNames;
   unorderedBindings = [];
