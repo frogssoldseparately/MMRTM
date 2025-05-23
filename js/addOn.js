@@ -644,9 +644,11 @@ class Tracker extends AddOn {
   promisedSnippets = ["content"];
   /**
    * @property {boolean} showLoadingScreen - Shows the loading splash screen while the tracker is modified.
+   * @property {boolean} revertStyleInActorizer - Removes the larger styling of buttons that the actorizer adds.
    */
   settings = {
     showLoadingScreen: true,
+    revertStyleInActorizer: false,
   };
 
   /**
@@ -663,6 +665,35 @@ class Tracker extends AddOn {
       content.body.querySelector("#highlight-checks"),
       "Highlight available checks"
     );
+  }
+
+  /**
+   * Reverts button style if the associated settings property value is true.
+   */
+  postBake() {
+    if (
+      this.settings.revertStyleInActorizer != null &&
+      this.settings.revertStyleInActorizer.toString().toLowerCase() === "true"
+    ) {
+      // If you are playing through Isghj's Actorizer, this reverts button styling.
+      const firstStyleTag =
+        this.getSnippet("content").DOM.querySelector("style");
+      const buttonStylingIndex =
+        firstStyleTag.innerText.search(/\W\Wbutton {([^}]*)}/);
+      if (buttonStylingIndex !== -1) {
+        // Button styling in the style tag was found. Now, remove it.
+        const firstStyleContent = firstStyleTag.innerText;
+        const buttonStylingCapIndex =
+          firstStyleContent.indexOf("}", buttonStylingIndex) + 3;
+        firstStyleTag.innerText = "";
+        firstStyleTag.appendChild(
+          document.createTextNode(
+            firstStyleContent.slice(0, buttonStylingIndex) +
+              firstStyleContent.slice(buttonStylingCapIndex)
+          )
+        );
+      }
+    }
   }
 
   /**
@@ -818,29 +849,6 @@ class MapNavigator extends AddOn {
       return;
 
     const originalDOM = this.getExternalSnippet("tracker/content").DOM;
-
-    if (
-      this.settings.revertStyleInActorizer != null &&
-      this.settings.revertStyleInActorizer.toString().toLowerCase() === "true"
-    ) {
-      // If you are playing through Isghj's Actorizer, this reverts button styling.
-      const firstStyleTag = originalDOM.querySelector("style");
-      const buttonStylingIndex =
-        firstStyleTag.innerText.search(/\W\Wbutton {([^}]*)}/);
-      if (buttonStylingIndex !== -1) {
-        // Button styling in the style tag was found. Now, remove it.
-        const firstStyleContent = firstStyleTag.innerText;
-        const buttonStylingCapIndex =
-          firstStyleContent.indexOf("}", buttonStylingIndex) + 3;
-        firstStyleTag.innerText = "";
-        firstStyleTag.appendChild(
-          document.createTextNode(
-            firstStyleContent.slice(0, buttonStylingIndex) +
-              firstStyleContent.slice(buttonStylingCapIndex)
-          )
-        );
-      }
-    }
 
     // The row elements denoting region in the Item Replacements table.
     const regionRows = Array.from(
@@ -1046,7 +1054,6 @@ class MapNavigator extends AddOn {
    * @property {boolean} enableShortcuts - Enables shortcuts.
    * @property {boolean} enablePopupMode - Enables popup mode.
    * @property {boolean} hideClearedLocations - Hides region buttons when all associated checks are clicked.
-   * @property {boolean} revertStyleInActorizer - Removes the larger styling of buttons that the actorizer adds.
    * @property {Array<Object>} navButtons - Information on the navigation buttons that appear atop the map container.
    * The property of each member object is attributed directly to the navigation button.
    * @property {Object} regionOwnership - Information on what region buttons are added to the map. Properties of
@@ -1058,7 +1065,6 @@ class MapNavigator extends AddOn {
     enableShortcuts: false,
     enablePopupMode: false,
     hideClearedLocations: true,
-    revertStyleInActorizer: false,
     navButtons: [
       {
         id: "map-visibility-button",

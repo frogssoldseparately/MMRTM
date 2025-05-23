@@ -19,7 +19,6 @@ Creates a map to help with navigating the modified tracker.
    * @property {boolean} enableShortcuts - Enables shortcuts.
    * @property {boolean} enablePopupMode - Enables popup mode.
    * @property {boolean} hideClearedLocations - Hides region buttons when all associated checks are clicked.
-   * @property {boolean} revertStyleInActorizer - Removes the larger styling of buttons that the actorizer adds.
    * @property {Array<Object>} navButtons - Information on the navigation buttons that appear atop the map container.
    * The property of each member object is attributed directly to the navigation button.
    * @property {Object} regionOwnership - Information on what region buttons are added to the map. Properties of

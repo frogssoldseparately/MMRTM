@@ -24,9 +24,10 @@ This add-on acts as a container for the original tracker, storing it as a modifi
 
 ### Settings
 
-|       name        |  type   |                                    description                                     |
-| :---------------: | :-----: | :--------------------------------------------------------------------------------: |
-| showLoadingScreen | boolean | Whether or not to show the MMRTM splash screen while the modified tracker is built |
+|          name          |  type   |                                    description                                     |
+| :--------------------: | :-----: | :--------------------------------------------------------------------------------: |
+|   showLoadingScreen    | boolean | Whether or not to show the MMRTM splash screen while the modified tracker is built |
+| revertStyleInActorizer | boolean |           Whether or not to remove button styling done by the Actorizer            |
 
 ## Shared Modifier
 
@@ -161,15 +162,14 @@ goToId("#[name of the row in all lower case with no spaces]-row");
 
 ### Settings
 
-|          name          |   type   |                                                           description                                                            |
-| :--------------------: | :------: | :------------------------------------------------------------------------------------------------------------------------------: |
-|      mapImagePath      |  string  |                                                 url/relative path for the image                                                  |
-|    enableShortcuts     | boolean  |                                               Whether shortcuts are active or not                                                |
-|    enablePopupMode     | boolean  | Whether the map is created in a separate window or not. Due to certain limitations, this only works when the modifier is hosted. |
-|  hideClearedLocations  | boolean  |                            Whether or not to hide a map button after all related checks are collected                            |
-| revertStyleInActorizer | boolean  |                                  Whether or not to remove button styling done by the Actorizer                                   |
-|       navButtons       | [object] |                          Information on how to construct the navigation buttons atop the map container                           |
-|    regionOwnership     |  object  |                      Information on how to build the map buttons and what regions they are associated with                       |
+|         name         |   type   |                                                           description                                                            |
+| :------------------: | :------: | :------------------------------------------------------------------------------------------------------------------------------: |
+|     mapImagePath     |  string  |                                                 url/relative path for the image                                                  |
+|   enableShortcuts    | boolean  |                                               Whether shortcuts are active or not                                                |
+|   enablePopupMode    | boolean  | Whether the map is created in a separate window or not. Due to certain limitations, this only works when the modifier is hosted. |
+| hideClearedLocations | boolean  |                            Whether or not to hide a map button after all related checks are collected                            |
+|      navButtons      | [object] |                          Information on how to construct the navigation buttons atop the map container                           |
+|   regionOwnership    |  object  |                      Information on how to build the map buttons and what regions they are associated with                       |
 
 ## Marked Log Generator
 

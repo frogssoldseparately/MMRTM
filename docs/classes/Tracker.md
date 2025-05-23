@@ -1,1 +1,53 @@
-Not implemented
+# Tracker Class
+
+#### Extends AddOn
+
+A container add-on for the original, unmodified tracker.
+
+## Properties
+
+### Static
+
+### Private
+
+### Public
+
+**setings**
+
+```
+   * @property {boolean} showLoadingScreen - Shows the loading splash screen while the tracker is modified.
+   * @property {boolean} revertStyleInActorizer - Removes the larger styling of buttons that the actorizer adds.
+```
+
+### Getters
+
+### Setters
+
+## Methods
+
+### Static
+
+### Private
+
+### Public
+
+**bake**
+
+```
+   * Converts the provided tracker.html raw text into a workable DOM as "tracker/content".
+```
+
+**postBake**
+
+```
+   * Reverts button style if the associated settings property value is true.
+```
+
+**repairText**
+
+```
+   * Creates a span containing some target element and a paragraph and injects it
+   * at previousSibling's position.
+   * @param {HTMLElement} previousSibling - The element to lump the text with.
+   * @param {string} text - The text to create a paragraph element for.
+```
