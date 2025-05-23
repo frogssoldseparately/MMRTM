@@ -116,6 +116,19 @@ To get the most utility possible out of this, having a bookmark for both the ori
 
 ## Planned Features
 
+Make the annotator easier to use and _more useful_ altogether.
+
+- Add the ability to junk and hide locations without spoiling the contents.
+- Add watches for certain user-defined items to create note entries upon their discovery.
+  - Tired of looking through the tracker to figure out where there's some milk?
+- Make writing/modifying/deleting note entries more straight forward.
+
+A visual item tracker with different levels of reactivity.
+
+Allow for exporting and importing settings wholesale, instead of add-on by add-on.
+
+Work through documentation to make it more cohesive and educational. It is lacking.
+
 ## Built-in Add-on's
 
 For more information on any of the add-on's listed below, please see the [add-on's writeup](docs/addons.md).

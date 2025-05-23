@@ -1,7 +1,3 @@
-function addOnAdded(event) {}
-
-function addOnRemoved(event) {}
-
 function alertContext(messageKey) {
   var message;
   switch (messageKey) {
@@ -180,12 +176,6 @@ function filePicked(changeEvent) {
   }
 }
 
-/*
-function getActiveAddons() {
-  return ["Tracker", "AutoDarkHighlight"];
-}
-*/
-
 function getLine(indices, index) {
   const endCharIndex = indices.find((i) => i >= index);
   const startArrayIndex = indices.indexOf(endCharIndex) - 1;
@@ -298,4 +288,12 @@ function globalKeyDownListener(event) {
       // alerts prevent this code from running, and holding ^s opens a ton of save dialogs
     }
   }
+}
+
+function addRequiredAddOns(availableController, activeController) {
+  availableController.entries
+    .filter((elem) => elem.description.includes("[REQUIRED]"))
+    .forEach((target) => {
+      activeController.adopt(target);
+    });
 }

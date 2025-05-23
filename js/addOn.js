@@ -734,7 +734,7 @@ class MapNavigator extends AddOn {
           document.getElementById("mapNavigator-popup-shortcuts"),
           "text/html",
           this.settings.enableShortcuts != null &&
-            this.settings.enableShortcuts.toLowerCase() === "true",
+            this.settings.enableShortcuts.toString().toLowerCase() === "true",
           "Having shortcuts enabled on MapNavigator adds the following:\n" +
             "[SHIFT + m]\t=> Reopen closed map\n"
         );
@@ -765,7 +765,7 @@ class MapNavigator extends AddOn {
           document.getElementById("mapNavigator-shortcuts"),
           "text/html",
           this.settings.enableShortcuts != null &&
-            this.settings.enableShortcuts.toLowerCase() === "true",
+            this.settings.enableShortcuts.toString().toLowerCase() === "true",
           "Having shortcuts enabled on MapNavigator adds the following:\n" +
             "[SHIFT + m]\t=> Toggle map visibility\n" +
             "[,]\t\t\t=> Decrease map size by 50\n" +
@@ -1020,7 +1020,7 @@ class MapNavigator extends AddOn {
       // change value fed to hideIfAllChecked to region class in if else
       if (
         this.settings.enablePopupMode != null &&
-        this.settings.enablePopupMode.toLowerCase() === "true"
+        this.settings.enablePopupMode.toString().toLowerCase() === "true"
       ) {
         checkAssignmentJS +=
           ".forEach(che => { che.classList.add('" +
@@ -1464,6 +1464,23 @@ function showHideSettings() {
   }
 
   /**
+   * Adds class information to price entries for the MarkedLogGenerator.
+   */
+  prepRandomizedPricesTable() {
+    this.oneOffExecute("identifyTables");
+    const randomizedPricesTable =
+      this.originalDOM.querySelector("#randomized-prices");
+    if (!randomizedPricesTable) return;
+    randomizedPricesTable.querySelectorAll("tr").forEach((tr) => {
+      const spoilerSpan = tr.querySelector("span");
+      if (spoilerSpan) {
+        tr.querySelector("td:not(.spoiler)").classList.add("cost-source");
+        spoilerSpan.classList.add("randomized-price");
+      }
+    });
+  }
+
+  /**
    * Adds class information to gossip entires for the MarkedLogGenerator.
    */
   prepGossipStoneHintsTable() {
@@ -1593,6 +1610,7 @@ class MarkedLogGenerator extends AddOn {
     originalDOM
       .querySelectorAll("#item-replacements span")
       .forEach((span) => span.classList.add("spoiler-span"));
+    sharedModifier.oneOffExecute("prepRandomizedPricesTable");
     sharedModifier.oneOffExecute("prepGossipStoneHintsTable");
   }
 }

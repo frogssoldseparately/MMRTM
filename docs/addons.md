@@ -18,6 +18,8 @@ Shortcut entries that do not have a name are ones that cannot be rebound and are
 
 ## Tracker
 
+[Class Page](classes/tracker.md)
+
 This add-on acts as a container for the original tracker, storing it as a modifiable DOM tree that can be accessed by other add-on's. This add-on also fixes some text that breaks during the process of turning the raw text into a DOM tree.
 
 ### Settings
@@ -28,9 +30,13 @@ This add-on acts as a container for the original tracker, storing it as a modifi
 
 ## Shared Modifier
 
+[Class Page](classes/sharedModifier.md)
+
 This add-on is not useful for the end user to interact with directly. It provides some shared resources for add-on's to access while minimizing conflictions, like making specific changes to the original tracker that multiple add-on's require.
 
 ## Shortcut Manager
+
+[Class Page](classes/shortcutManager.md)
 
 This add-on handles shortcut bindings and prevents conflicting bindings.
 
@@ -42,6 +48,8 @@ This add-on handles shortcut bindings and prevents conflicting bindings.
 |      | CTRL + SHIFT + B | Reset shortcut bindings to their defaults |
 
 ## Annotator
+
+[Class Page](classes/annotator.md)
 
 This add-on presents as a collapsible panel at the top of the page where notes about item locations can be stored. To use, just type check names, items, or prices into the text box and select the desired item from the autocomplete list. This is done for each "word" (each check/item/price), insteading of typing out the entire note at once. After submitting the note, if it is valid, it will be added to the table below the textbox. The button at the start of each row will take you to the corresponding check.
 
@@ -68,6 +76,8 @@ This add-on presents as a collapsible panel at the top of the page where notes a
 
 ## Auto Dark Highlight
 
+[Class Page](classes/autoDarkHighlight.md)
+
 This add-on sets the desired theme on start, for those averse to light themes, and highlights available checks automatically.
 
 ### Settings
@@ -79,9 +89,13 @@ This add-on sets the desired theme on start, for those averse to light themes, a
 
 ## Check Filterer
 
+[Class Page](classes/checkFilterer.md)
+
 Provides the option to filter out rows in the Item Replacements table based on their contents after being collected.
 
 ## Map Navigator
+
+[Class Page](classes/mapNavigator.md)
 
 Adds a hideable, static map to more easily navigate the tracker by region.
 
@@ -159,11 +173,15 @@ goToId("#[name of the row in all lower case with no spaces]-row");
 
 ## Marked Log Generator
 
+[Class Page](classes/markedLogGenerator.md)
+
 This exports a spoiler log with indicators for what checks were collected. The format matches the original spoiler log as closely as possible.
 
 Note: This is only really useful if you, like myself, are a data hoarder and like to archive randomizer runs.
 
 ## Show Collected
+
+[Class Page](classes/showCollected.md)
 
 This re-enables a feature from the [MMR](https://github.com/ZoeyZolotova/mm-rando) tracker that highlights _collected_ checks differently than accessible checks. Adds a checkbox to toggle this being active.
 
@@ -184,9 +202,13 @@ This re-enables a feature from the [MMR](https://github.com/ZoeyZolotova/mm-rand
 
 ## State Saver
 
+[Class Page](classes/stateSaver.md)
+
 This automatically saves your progress for future sessions every time you change the tracker state (un/marking a check). To use this add-on, LocalStorage must be active as there's nothing for it to do otherwise. When a tracker with a different seed is built, the saved state is automatically cleared and a "Copy Last State to Clipboard" button is available (in case the tracker swap was a mistake).
 
 ## Text Search
+
+[Class Page](classes/textSearch.md)
 
 When typing anywhere on the page (that isn't the tracker state control), a textbox appears at the top of the page and is used to search the check names in the Item Replacements table. The first best match is automatically focused as you type.
 

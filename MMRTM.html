@@ -954,6 +954,14 @@ function generateMarkedSpoilerLog() {
         });
     }
     
+    const randomizedPricesTable = document.querySelector("#randomized-prices");
+    if (randomizedPricesTable) {
+        const costSources = randomizedPricesTable.querySelectorAll(".cost-source");
+        const prices = randomizedPricesTable.querySelectorAll(".randomized-price");
+        outputText += "\n Randomized Prices                 Message\n";
+        outputText += convertToPrintable([55, -1], costSources, prices);
+    }
+
     const gossipStoneHintsTable = document.querySelector('#gossip-stone-hints');
     if (gossipStoneHintsTable) {
         const gossipLocations = gossipStoneHintsTable.querySelectorAll('.gossip-location');
@@ -1928,6 +1936,7 @@ class WindowCommunicator extends BroadcastChannel {
         <div id="annotator-badge-container"></div>
         <input id="annotator-text-control" type="text">
         <button id="annotator-submit">Add</button>
+        <p><b>Enter</b>: Accept Term <b>Shift Enter</b>: Push Row <b>Escape</b>: Delete Row <b>Click Row</b>: Modify Entery</p>
         <table id="annotator-notes-table"></table>
     </div>
     <button id="annotator-visibility-control" class="collapsible-panel-control">Notes</button>

@@ -34,10 +34,10 @@ aog.know(
   MarkedLogGenerator,
   ShowCollected,
   TextSearch,
-  AutoTracker,
+  /* AutoTracker, */
   ShortcutManager,
-  TimeKeeper,
-  ItemTracker,
+  /* TimeKeeper, */
+  /* ItemTracker, */
   Annotator,
   CheckFilterer
 );
@@ -158,7 +158,11 @@ const outstandingIntervalId = setInterval(() => {
         const entry = addOnSelectController.getEntry("key", entryKey);
         addOnActiveController.adopt(entry);
       });
+    } else {
+      addRequiredAddOns(addOnSelectController, addOnActiveController);
     }
+  } else {
+    addRequiredAddOns(addOnSelectController, addOnActiveController);
   }
 
   function assertNotNullParameter(property, value) {
