@@ -2490,6 +2490,9 @@ tr[data-hideable="true"]:has(input:checked) {
     display: none;
 }
 /* vvvv    From Isghj's Actorizer Test 88.3    vvvv */
+.invisible {
+    display: none;
+}
 .settingsFlex {
     display: flex;
     flex-direction: row;
@@ -2523,23 +2526,29 @@ function updateItemDisplaySettings(event) {
     Array.from(document.querySelectorAll(`#item-replacements tr[data-hideableType="${category}"]`)).forEach(elem => {
         elem.setAttribute("data-hideable", state.toString());
     });
-    /* make sure this works
-    if (!state) {
-        Array.from(document.querySelectorAll(`#item-replacements tr[data-hideable="true"][data-hideableType="${category}"]`)).forEach(elem => {
-            elem.setAttribute("data-hideable", "false");
-        });
-    } else {
-        Array.from(document.querySelectorAll(`#item-replacements tr[data-hideable="false"][data-hideableType="${category}"]`)).forEach(elem => {
-            elem.setAttribute("data-hideable", "true");
-        });
-    }
-    */
+}
+function showHideSettings() {
+    const settingsCode = document.getElementById("settings-tag");
+    settingsCode.classList.toggle("invisible");
 }
     </script>
     <script id="checkFilterer-script" type="text/plain" stage="trackerStart">
+/* ^^^^    From Isghj's Actorizer Test 88.3    ^^^^ */
+const removableSettings = {};
+removableSettings["hearts"] = ["Piece of Heart", "Heart Container", "Recovery Heart"];
+removableSettings["lowRupees"] = ["Green Rupee", "Blue Rupee", "Red Rupee"];
+removableSettings["highRupees"] = ["Purple Rupee", "Silver Rupee", "Gold Rupee"];
+removableSettings["bottleContents"] = ["Bottle:", "Milk", "Chateau", "Potion"];
+removableSettings["permanents"] = ["Mask", "Stray Fairy", "Skulltula Spirit", "Song", "Sonata", "Lullaby", "Bossa", "Elegy", "Oath to Order", "Shield", "Upgrade", "Pictobox", "Lens of Truth", "Hookshot", "Spin Attack", "Double Defense", "Sword", "Notebook", "Hat", "Hood", "Map", "Ice Trap", "Empty Bottle", "Compass"];
+removableSettings["ammo"] = ["Arrow", "Bombs", "Bombchu", "Deku Nuts", "Deku Stick"];
+/* ^^^^    From Isghj's Actorizer Test 88.3    ^^^^ */
 Array.from(document.querySelectorAll(".settingsFlex input")).forEach(elem => {
     elem.addEventListener("click", updateItemDisplaySettings);
 });
+const codeToggle = document.querySelector("code + button");
+if (codeToggle.onclick == null || codeToggle.onclick.length === 0) {
+    codeToggle.addEventListener("click", showHideSettings);
+}
 const hideableCategories = Object.getOwnPropertyNames(removableSettings);
 hideableCategories.forEach(category => {
     const entryTargets = Array.from(document.querySelectorAll("#item-replacements .itemname span"));
