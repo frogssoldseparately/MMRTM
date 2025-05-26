@@ -210,7 +210,7 @@ class SettingsContainer {
    * saved settings. Any omitted properties will carry over from
    * saved settings.
    * @param {string} key - The AddOn instance's key.
-   * @param {strign} stringIn - Parseable JSON used to overwrite saved settings.
+   * @param {string} stringIn - Parseable JSON used to overwrite saved settings.
    */
   applyChanges(key, stringIn) {
     if (!this.#addons.hasOwnProperty(key)) {
