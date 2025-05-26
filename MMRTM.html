@@ -78,6 +78,9 @@
             </div>
         </div>
     </div>
+    <label for="settings-picker">Import Settings</label>
+    <input id="settings-picker" type="file" onchange="importSettings(event)" />
+    <button onclick="exportSettings()">Export Settings</button>
     <div id="page-cover">
         <h1>Building Tracker</h1>
         <h3>Tracker Modifier by jkl</h3>
@@ -2462,7 +2465,7 @@ collapsiblePanels.forEach((panel) => {
     }
 )).knownList = discoverAutoCompleteList();
 
-if (localStorage.getItem("annotatorNotes") !== null) {
+if (localStorageEnabled && localStorage.getItem("annotatorNotes") !== null) {
     const lines = localStorage.getItem("annotatorNotes").split(";");
     lines.forEach(line => {
         const tokens = line.split(",");

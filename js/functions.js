@@ -297,3 +297,52 @@ function addRequiredAddOns(availableController, activeController) {
       activeController.adopt(target);
     });
 }
+
+function importSettings(changeEvent) {
+  if (!localStorageEnabled) {
+    alert("Importing is not current available without LocalStorage.");
+    return;
+  }
+  if (changeEvent.target.files && changeEvent.target.files[0]) {
+    const reader = new FileReader();
+    reader.addEventListener("load", (event) => {
+      const rawSettings = event.target.result;
+      try {
+        const settingsObject = JSON.parse(rawSettings);
+        Object.getOwnPropertyNames(settingsObject).forEach((key) => {
+          localStorage.setItem(key, JSON.stringify(settingsObject[key]));
+        });
+        alert("Settings imported. Reloading.");
+        location.reload();
+      } catch (e) {
+        alert("Parse error in imported settings : " + e.message);
+      }
+    });
+    reader.readAsText(changeEvent.target.files[0], "utf-8");
+  }
+}
+
+function exportSettings() {
+  if (!localStorageEnabled) {
+    alert("Exporting is not currently available without LocalStorage.");
+    return;
+  }
+  const storageKeys = Object.getOwnPropertyNames(localStorage);
+  const exportedSettings = {};
+  storageKeys
+    .filter((elem) => elem.includes("SavedSettings"))
+    .forEach((key) => {
+      exportedSettings[key] = JSON.parse(localStorage.getItem(key));
+    });
+  const outputText = JSON.stringify(exportedSettings, null, 2);
+  const downloadLink = document.createElement("a");
+  downloadLink.setAttribute(
+    "href",
+    "data:text/plain;charset=utf-8," + encodeURIComponent(outputText)
+  );
+  downloadLink.setAttribute("download", "MMRTM-settings.json");
+  downloadLink.style.display = "none";
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
